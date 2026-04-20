@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skills": {
+    "execute-plan-phase": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "9a6f0cd2929315ff1199c60c1137560e932091d648309fcd7919186604e7dcee"
+    },
+    "grill-me": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "e02446c0912decc73472ab3392af040fac223fb93b46fd101bce27686d717136"
+    },
+    "improve-codebase-architecture": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "76d07c4c0bebc162cc76ca7494bfe7a90e279f35832f7ce6dfc4ce16518fd560"
+    },
+    "pixijs": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "880175c74d347ba7e40e8434544f4ae8c1d006ed68296cec6ba355da0d532508"
+    },
+    "prd-to-plan": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "df4466d6037087f919011e85d41fa29e6c6ef60815fc510f266bebfe868b0f70"
+    },
+    "ubiquitous-language": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "32f8a3426cb2d2c3db05977369e70d793e342c38ea87f5447eb22108c03c8d7a"
+    },
+    "write-a-prd": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "bd8e3f467db3d832ee43040c5bbcb05903a21f644bb19fe9e44bea1f00d4b0b9"
+    },
+    "write-a-skill": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "computedHash": "b44d8aab2ead83c716e01af4c9a24ccc4575ce70ad58ec4f1749fb88c9cc82ba"
+    }
+  }
+}
