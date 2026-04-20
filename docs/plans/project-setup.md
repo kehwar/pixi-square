@@ -16,6 +16,8 @@ Durable decisions that apply across all phases:
 
 ## Phase 1: Vue Baseline
 
+> ✅ Completed — Vue 3 + TypeScript + Router + Pinia + Vitest + ESLint scaffolded; build, test, and lint all pass.
+
 **User stories**: 1, 2, 3, 4, 5
 
 ### What to build
@@ -27,13 +29,21 @@ Do **not** select: Prettier, Playwright.
 
 ### Acceptance criteria
 
-- [ ] `npm create vue@latest` completes without errors.
-- [ ] `npm install` completes without errors.
-- [ ] `npm run dev` starts the dev server and the default Vue welcome page is visible in the browser.
-- [ ] `npm run build` produces a `dist/` directory.
-- [ ] `npm run test` runs and exits cleanly (scaffold placeholder tests pass or are skipped).
-- [ ] `npm run lint` runs and exits cleanly.
-- [ ] `tsconfig.json` contains `"strict": true`.
+- [x] `npm create vue@latest` completes without errors.
+- [x] `npm install` completes without errors.
+- [x] `npm run dev` starts the dev server and the default Vue welcome page is visible in the browser.
+- [x] `npm run build` produces a `dist/` directory.
+- [x] `npm run test` runs and exits cleanly (scaffold placeholder tests pass or are skipped).
+- [x] `npm run lint` runs and exits cleanly.
+- [x] `tsconfig.json` contains `"strict": true`.
+
+### Notes
+
+- `create-vue@3.22.3` does not accept `--no-jsx`, `--no-playwright`, or `--no-prettier` flags; only the positive feature flags are supported. The scaffold was run as `npm create vue@latest . -- --ts --router --pinia --vitest --eslint --force` and answered the package-name prompt interactively with `pixi-square`. Prettier and Playwright are simply absent from the output.
+- The scaffold generates `test:unit` (not `test`) as the Vitest script name. References to `npm run test` in this plan and the PRD mean `npm run test:unit` in practice.
+- The lint pipeline includes `oxlint` as a first pass (`lint:oxlint`) followed by `lint:eslint`. Both pass with zero warnings/errors.
+- `"strict": true` is not written directly into `tsconfig.app.json` — it is inherited via `@vue/tsconfig/tsconfig.json` (the base of `@vue/tsconfig/tsconfig.dom.json`). The effective setting is `true`.
+- `npm run dev` (browser visible) verified manually.
 
 ---
 
