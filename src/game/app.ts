@@ -1,6 +1,9 @@
-import { Application, Assets, Sprite } from 'pixi.js'
+import { Application } from 'pixi.js'
+
+import { GameScene } from './renderer/game-scene'
 
 let app: Application | null = null
+let gameScene: GameScene | null = null
 
 export async function initApp(container: HTMLElement): Promise<void> {
   if (app !== null) {
@@ -17,21 +20,17 @@ export async function initApp(container: HTMLElement): Promise<void> {
 
   container.appendChild(app.canvas)
 
-  const texture = await Assets.load<import('pixi.js').Texture>('/bunny.png')
-  const bunny = new Sprite(texture)
-  bunny.anchor.set(0.5)
-  bunny.position.set(app.screen.width / 2, app.screen.height / 2)
-  app.stage.addChild(bunny)
-
-  app.ticker.add((time) => {
-    bunny.rotation += 0.1 * time.deltaTime
-  })
+  gameScene = new GameScene(app)
+  gameScene.start()
 }
 
 export function destroyApp(): void {
   if (app === null) {
     return
   }
+
+  gameScene?.stop()
+  gameScene = null
 
   app.destroy(
     { removeView: true, releaseGlobalResources: true },

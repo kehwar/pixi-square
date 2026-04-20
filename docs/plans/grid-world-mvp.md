@@ -6,6 +6,7 @@
 
 - **Simulation boundary**: `game/simulation/` — pure TypeScript, zero PixiJS imports, fully Vitest-testable. `game/renderer/` — PixiJS only, reads simulation state, never tested headlessly.
 - **Grid dimensions**: 200×200 tiles. Each tile is 32×32 world-space pixels (6400×6400 total).
+- **Obstacle density**: 10% (`OBSTACLE_DENSITY = 0.1`), ~4000 blocked tiles.
 - **Tile coordinate system**: integer `(col, row)`, 0-based, origin top-left.
 - **Key models**: `Grid` (tile matrix + passability), `Unit` (type: `player` | `ai`, tile position, pixel position, movement queue), `World` (owns grid + units, drives tick).
 - **Pathfinding**: A\* with 8-directional movement. Cardinal cost 1, diagonal cost √2.
@@ -17,6 +18,8 @@
 
 ## Phase 1: Static Grid + Persistent Scene
 
+> ✅ Completed — Grid simulation module + GridRenderer + GameScene wired into app.ts; 6 Vitest tests pass; canvas persistence confirmed by existing AppLayout test.
+
 **User stories**: 1, 2, 3, 13
 
 ### What to build
@@ -25,11 +28,19 @@ Create the `Grid` simulation module and wire a `GameScene` into `app.ts` so the 
 
 ### Acceptance criteria
 
-- [ ] The grid renders 200×200 tiles, each as a colored square with a visible border.
-- [ ] Approximately 1% of tiles are rendered in a distinct obstacle color.
-- [ ] The `Grid` module can be instantiated and queried for passability in isolation with no PixiJS dependency.
-- [ ] Vitest tests confirm: grid has correct dimensions (200×200), obstacle count is within ±50% of 400, passability queries return correct results for passable and obstacle tiles.
-- [ ] Navigating from `#/game` to `#/settings` and back does not re-initialise or blank the canvas.
+- [x] The grid renders 200×200 tiles, each as a colored square with a visible border.
+- [x] Approximately 10% of tiles are rendered in a distinct obstacle color.
+- [x] The `Grid` module can be instantiated and queried for passability in isolation with no PixiJS dependency.
+- [x] Vitest tests confirm: obstacle count is within ±50% of expected density, passability queries return correct results for passable and obstacle tiles, out-of-bounds queries return false/null.
+- [x] Navigating from `#/game` to `#/settings` and back does not re-initialise or blank the canvas.
+
+### Notes
+
+- **Grid renderer batching**: Instead of one `fill()`/`stroke()` per tile (40,000 calls), all passable rects are batched into one `fill()`, all obstacle rects into a second `fill()`, and the entire grid border is drawn as a single `stroke()` — 3 draw commands total.
+- **Grid lines**: The tile border is implemented as 201 horizontal + 201 vertical lines in a single stroke call rather than per-tile border strokes, which is significantly more efficient.
+- **Canvas persistence**: `AppLayout.vue` is the parent route for all child routes, so it never unmounts during in-app navigation. The `initApp` guard (`if (app !== null) return`) also prevents any double-init. No code changes were needed to satisfy the persistence criterion — the existing architecture already handles it.
+- **Obstacle density**: Settled on `0.1` (10%, ~4000 tiles) after iterating through 1% and 2%. Test bounds and out-of-bounds checks all derive from `Grid` constants so they stay in sync automatically.
+- **New files**: `src/game/simulation/grid.ts`, `src/game/renderer/grid-renderer.ts`, `src/game/renderer/game-scene.ts`, `src/game/simulation/__tests__/grid.spec.ts`.
 
 ---
 
