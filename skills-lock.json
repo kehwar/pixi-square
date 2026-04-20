@@ -21,6 +21,56 @@
       "sourceType": "github",
       "computedHash": "880175c74d347ba7e40e8434544f4ae8c1d006ed68296cec6ba355da0d532508"
     },
+    "pixijs-application": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "17cdbe975621930c1268585b8528a1cdfcca040b2340982326060434db5a9b0d"
+    },
+    "pixijs-assets": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "10be9f4d243ccda92b47fb1bbd72a05ba0ff89d4f5cf218e71e27498cd725c0c"
+    },
+    "pixijs-events": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "0989aa02f0c0673445a6b3b0c298f3c6b4c3a383668fa3656013754e6262300e"
+    },
+    "pixijs-performance": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "d2855237ce322061d531135fac9956918db0226399af9a3ed46ad30ac50f100b"
+    },
+    "pixijs-scene-container": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "c5cea512c0aff13d97938dd7fbc5955bc04513e367067455b7fa17583ee31c00"
+    },
+    "pixijs-scene-graphics": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "aa327bd51c64d295f8b96a3a2f72f27ecfa5a4922fcdd5f0a375a769d1b1cc50"
+    },
+    "pixijs-scene-particle-container": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "60809194b2caf6b878f360b90965ddaef3c44036b0b3370dc11c44e2aac69b25"
+    },
+    "pixijs-scene-sprite": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "14d8e3e00837e0e173007f4fcc5d1ab175dbda1ada016ee92b03e725b3ed0882"
+    },
+    "pixijs-scene-text": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "1d847869f2e33f31b5993fa6d3fb20991fd154722d5bb7ef08e688fe915c5e1c"
+    },
+    "pixijs-ticker": {
+      "source": "pixijs/pixijs-skills",
+      "sourceType": "github",
+      "computedHash": "6b3eec30377b1ec013a858301d309f3138eb512e7af8e1e8d0c3a759c8223618"
+    },
     "prd-to-plan": {
       "source": "kehwar/skills",
       "sourceType": "github",
