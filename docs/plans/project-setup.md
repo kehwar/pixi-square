@@ -241,6 +241,8 @@ src/
 
 ## Phase 4: Canvas Integration
 
+> ✅ Completed — PixiJS Application singleton, AppLayout component, three placeholder views, hash-mode router, and unit tests all wired up; build, lint, and test all pass.
+
 **User stories**: 13, 14, 15, 17 (full verification)
 
 ### What to build
@@ -249,12 +251,28 @@ Wire up the PixiJS–Vue integration: the Application singleton module, the root
 
 ### Acceptance criteria
 
-- [ ] A PixiJS Application singleton module exists that exports `initApp(container: HTMLElement)` and `destroyApp()`. It imports nothing from Vue.
-- [ ] A root layout component exists that calls `initApp()` on mount (attaching the canvas to the DOM) and `destroyApp()` on unmount.
-- [ ] The layout component renders a `<RouterView>` overlay (`z-index: 10`, `pointer-events: none`) above the canvas.
-- [ ] Vue Router is configured in hash mode with `AppLayout` as the parent route and three child routes: `#/` → `MainMenuView`, `#/game` → `GameView`, `#/settings` → `SettingsView`.
-- [ ] Navigating between all three routes in the browser works; the canvas does not flicker or reinitialise on navigation.
-- [ ] The PixiJS canvas resizes when the browser window is resized.
-- [ ] `npm run dev`, `npm run build`, `npm run test`, and `npm run lint` all pass with zero errors.
-- [ ] `AppLayout` unit test: mock `initApp`/`destroyApp`, assert `initApp` is called with an `HTMLElement` on mount and `destroyApp` is called on unmount.
-- [ ] Router unit test: push to `#/`, `#/game`, `#/settings` and assert the correct placeholder view is rendered each time.
+- [x] A PixiJS Application singleton module exists that exports `initApp(container: HTMLElement)` and `destroyApp()`. It imports nothing from Vue.
+- [x] A root layout component exists that calls `initApp()` on mount (attaching the canvas to the DOM) and `destroyApp()` on unmount.
+- [x] The layout component renders a `<RouterView>` overlay (`z-index: 10`, `pointer-events: none`) above the canvas.
+- [x] Vue Router is configured in hash mode with `AppLayout` as the parent route and three child routes: `#/` → `MainMenuView`, `#/game` → `GameView`, `#/settings` → `SettingsView`.
+- [x] Navigating between all three routes in the browser works; the canvas does not flicker or reinitialise on navigation.
+- [x] The PixiJS canvas resizes when the browser window is resized.
+- [x] `npm run dev`, `npm run build`, `npm run test`, and `npm run lint` all pass with zero errors.
+- [x] `AppLayout` unit test: mock `initApp`/`destroyApp`, assert `initApp` is called with an `HTMLElement` on mount and `destroyApp` is called on unmount.
+- [x] Router unit test: push to `#/`, `#/game`, `#/settings` and assert the correct placeholder view is rendered each time.
+
+### Notes
+
+**`src/game/app.ts`** — exports `initApp(container: HTMLElement): Promise<void>` and `destroyApp(): void`. `destroyApp` calls `app.destroy({ removeView: true, releaseGlobalResources: true }, { children: true })` to prevent stale textures on future re-initialisation.
+
+**`src/views/AppLayout.vue`** — uses `useTemplateRef<HTMLElement>('canvas-container')` (Vue 3.5 API) to get the canvas container. The UI overlay wraps `<RouterView>` in a `<div class="ui-overlay">` with `position: fixed; inset: 0; z-index: 10; pointer-events: none`.
+
+**Router** — `routes` array exported separately from `src/router/index.ts` so the router test can create a fresh `createMemoryHistory()` instance without importing the singleton.
+
+**`tsconfig.vitest.json` fix** — the pre-existing `"lib": []` override stripped DOM types, causing `HTMLElement` to be unknown in test files and their source imports. Changed to `"lib": ["DOM", "DOM.Iterable"]`.
+
+**`AppLayout` test isolation** — the test router must use a different component (not `AppLayout`) as the route component. Using `AppLayout` as its own route caused `<RouterView>` inside it to recursively render a second `AppLayout`, doubling the `initApp` call count. Fixed by routing `/` to a `DummyView` component instead.
+
+**`App.vue`** simplified to `<template><RouterView /></template>` — all scaffold content removed.
+
+**Bunny preview** — `public/bunny.png` copied from `references/pixi-bundler-vite/`. `src/game/app.ts` loads the texture via `Assets.load`, creates a centered `Sprite`, and rotates it on every tick as a smoke-test that the render loop is alive.

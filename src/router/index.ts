@@ -1,23 +1,25 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import type { RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
+import AppLayout from '../views/AppLayout.vue'
+import GameView from '../views/GameView.vue'
+import MainMenuView from '../views/MainMenuView.vue'
+import SettingsView from '../views/SettingsView.vue'
+
+export const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    component: AppLayout,
+    children: [
+      { path: '', name: 'main-menu', component: MainMenuView },
+      { path: 'game', name: 'game', component: GameView },
+      { path: 'settings', name: 'settings', component: SettingsView },
+    ],
+  },
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
+  history: createWebHashHistory(),
+  routes,
 })
 
 export default router

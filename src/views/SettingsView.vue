@@ -1,0 +1,5 @@
+<template>
+  <div class="settings-view">
+    <h1>Settings</h1>
+  </div>
+</template>
