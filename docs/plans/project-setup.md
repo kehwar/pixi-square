@@ -24,7 +24,7 @@ Durable decisions that apply across all phases:
 
 Run `npm create vue@latest` in the project root and confirm the generated project runs. This phase ends with a working dev server and a passing lint run — no PixiJS code is touched.
 
-Select during scaffold: TypeScript, Vue Router, Pinia, Vitest, ESLint.  
+Select during scaffold: TypeScript, Vue Router, Pinia, Vitest, ESLint.
 Do **not** select: Prettier, Playwright.
 
 ### Acceptance criteria
@@ -88,11 +88,11 @@ No subdirectories. The scaffold does not impose any folder conventions beyond `s
 **Entry point pattern** — `src/main.ts` uses an async IIFE (not top-level `await`), consistent with the Vite ≤6.0.6 production-build safety rule:
 ```ts
 (async () => {
-  const app = new Application();
-  await app.init({ background: '#1099bb', resizeTo: window });
-  document.getElementById('pixi-container')!.appendChild(app.canvas);
+  const app = new Application()
+  await app.init({ background: '#1099bb', resizeTo: window })
+  document.getElementById('pixi-container')!.appendChild(app.canvas)
   // ...
-})();
+})()
 ```
 The canvas is appended to a `<div id="pixi-container">` in `index.html`.
 
@@ -100,7 +100,7 @@ The canvas is appended to a `<div id="pixi-container">` in `index.html`.
 ```ts
 export default defineConfig({
   server: { port: 8080, open: true },
-});
+})
 ```
 No special `build` options or plugins. The Vue project's Vite config does not need PixiJS-specific additions.
 
@@ -183,6 +183,8 @@ src/
 
 ## Phase 3: Config and Dependency Merge
 
+> ✅ Completed — pixi.js + @pixi/sound added as deps; @antfu/eslint-config + happy-dom added as devDeps; redundant ESLint/jsdom packages removed; eslint.config.ts replaced with antfu(); vitest switched to happy-dom + globals; noUncheckedSideEffectImports added to tsconfig; src/ structure decided; build, lint, and test all pass.
+
 **User stories**: 8, 9, 10, 11, 12, 16, 17 (partial)
 
 ### What to build
@@ -193,16 +195,47 @@ The `src/` layout is decided here based on the two scaffold outputs. It is recor
 
 ### Acceptance criteria
 
-- [ ] The final `src/` directory structure is decided and documented (as a comment or addendum to this plan).
-- [ ] `pixi.js` and `@pixi/sound` are in `dependencies`.
-- [ ] `@vue/test-utils` and `@antfu/eslint-config` are in `devDependencies`.
-- [ ] Any ESLint packages made redundant by `@antfu/eslint-config` are removed.
-- [ ] `eslint.config.js` calls `antfu()` from `@antfu/eslint-config` only — no Prettier config present.
-- [ ] `tsconfig.json` retains `"strict": true` after any merge of PixiJS tsconfig options.
-- [ ] Vitest config has `environment: 'happy-dom'` and `globals: true`.
-- [ ] `npm run build` produces a valid `dist/` directory.
-- [ ] `npm run lint` passes with zero errors.
-- [ ] `npm run test` passes (scaffold placeholder tests may be removed if they conflict).
+- [x] The final `src/` directory structure is decided and documented (as a comment or addendum to this plan).
+- [x] `pixi.js` and `@pixi/sound` are in `dependencies`.
+- [x] `@vue/test-utils` and `@antfu/eslint-config` are in `devDependencies`.
+- [x] Any ESLint packages made redundant by `@antfu/eslint-config` are removed.
+- [x] `eslint.config.ts` calls `antfu()` from `@antfu/eslint-config` only — no Prettier config present.
+- [x] `tsconfig.json` retains `"strict": true` after any merge of PixiJS tsconfig options.
+- [x] Vitest config has `environment: 'happy-dom'` and `globals: true`.
+- [x] `npm run build` produces a valid `dist/` directory.
+- [x] `npm run lint` passes with zero errors.
+- [x] `npm run test` passes (scaffold placeholder tests may be removed if they conflict).
+
+### Notes
+
+**`src/` directory structure** (decision recorded here per acceptance criteria):
+```
+src/
+  main.ts           ← Vue entry point
+  App.vue           ← Root Vue component
+  vite-env.d.ts     ← Vite client type reference
+  assets/           ← Static assets (CSS, images)
+  components/       ← Reusable Vue components
+  router/           ← Vue Router setup
+  stores/           ← Pinia stores
+  views/            ← Route view components
+  game/             ← PixiJS code — Vue-free zone (created in Phase 4)
+    app.ts          ← Application singleton (initApp / destroyApp)
+```
+
+**Packages removed**: `@vue/eslint-config-typescript`, `eslint-plugin-vue`, `@vitest/eslint-plugin`, `eslint-plugin-oxlint`, `oxlint`, `@types/jsdom`, `jsdom`. Also deleted `.oxlintrc.json`.
+
+**Packages added**:
+- Dependencies: `pixi.js`, `@pixi/sound ^6.0.1`
+- DevDependencies: `@antfu/eslint-config`, `happy-dom`
+
+**Lint script simplified**: `"lint": "eslint . --fix --cache"` — the `lint:oxlint` + `lint:eslint` split is gone.
+
+**tsconfig addition**: `"noUncheckedSideEffectImports": true` added to `tsconfig.app.json` (from PixiJS bundler-vite template).
+
+**`tsconfig.vitest.json` types updated**: `"jsdom"` → `"vitest/globals"` to match globals mode.
+
+**`@antfu/eslint-config` API note**: the vitest integration option key is `test: true`, not `vitest: true` (the latter caused a TypeScript type error during `vue-tsc --build`).
 
 ---
 
