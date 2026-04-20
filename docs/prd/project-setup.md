@@ -2,124 +2,100 @@
 
 ## Problem Statement
 
-The project workspace is currently empty. Before any game features can be built, a coherent technical foundation must be decided: which build system, UI framework, rendering library, state manager, test runner, and developer tooling will be used. Without these decisions locked in, every subsequent feature risks being built on assumptions that later conflict.
-
-Additionally, the AI agent skills that provide guidance on the PixiJS API must be selected and installed so they are available from the first implementation commit.
+All technology decisions for the colony management game are locked and documented. The PixiJS sub-skills are installed. However, no project files exist: there is no `package.json`, no `src/`, no configuration files, and no dev server. Until the project is scaffolded, nothing can be built, tested, or run.
 
 ## Solution
 
-Decide and document the full technology stack for a PixiJS v8 colony management game delivered as a statically-hosted SPA. The game has three core non-rendering requirements that influence library choices from the start: **sound**, **local shared-screen multiplayer** (multiple players on the same device/browser tab), and a **gamepad-first input model**. Install the relevant PixiJS sub-skills from the `pixijs/pixijs-skills` repository.
+Use `npm create vue@latest` to bootstrap the project, and `npm create pixi@latest` (in a temporary directory) to inspect the canonical PixiJS v8 Vite scaffold. Merge the relevant parts of the PixiJS output into the Vue project, install all dependencies, replace the generated ESLint config with `@antfu/eslint-config`, and wire up the minimal integration: a persistent PixiJS canvas with a Vue Router overlay on top.
 
-No code is written in this PRD. Scaffolding is a separate PRD.
+The final `src/` directory structure is not pre-decided. It is determined during implementation by inspecting what both scaffold tools actually generate.
 
 ## User Stories
 
-1. As a developer, I want the technology stack chosen before writing any code, so I do not have to undo architectural decisions mid-project.
-2. As a developer, I want PixiJS v8 as the rendering library, so I get high-performance WebGL/WebGPU rendering for many simultaneous game objects.
-3. As a developer, I want Vue 3 as the UI framework, so I can build HUD panels and menus in HTML with a component model I am familiar with.
-4. As a developer, I want Vite as the build tool, so I get fast dev-server HMR and a zero-config static build output.
-5. As a developer, I want TypeScript with strict mode, so type errors are caught at compile time rather than at runtime.
-6. As a developer, I want Vue Router in hash mode, so the SPA works on any static host without server-side URL rewriting.
-7. As a developer, I want Pinia as the state management library, so Vue components can reactively consume game-derived data without touching PixiJS objects directly.
-8. As a developer, I want ESLint configured for Vue 3 and TypeScript, so code quality is enforced consistently.
-9. As a developer, I want Vitest as the test runner, so unit tests share the same Vite build pipeline with no separate configuration.
-10. As a developer, I want the deployment target confirmed as a static host (GitHub Pages or Netlify), so the build output requirements are clear from the start.
-11. As a developer, I want an audio library chosen upfront, so sound effects and music can be added without reconsidering the stack mid-project.
-12. As a player, I want sound effects and music during gameplay, so the colony feels alive and feedback is reinforced through audio.
-13. As a developer, I want the input model designed for multiple simultaneous players on one device, so the game loop and input handling are not later forced into an incompatible single-player assumption.
-14. As a player, I want to share a single screen with other players without needing separate devices or an internet connection, so local co-op is frictionless.
-15. As a player, I want to play with a gamepad as the primary input device, so the game feels purpose-built for controllers rather than adapted from a mouse-and-keyboard experience.
-16. As a developer, I want all in-game actions mappable to a gamepad, so keyboard/mouse are secondary fallbacks and no feature requires them.
-17. As a developer, I want the PixiJS sub-skills installed via `npx skills add pixijs/pixijs-skills`, so AI guidance on the PixiJS API is available before implementation begins.
-18. As a developer, I want the installed skills recorded in `skills-lock.json`, so the exact skill set is reproducible by any contributor.
+1. As a developer, I want to bootstrap the project with `npm create vue@latest`, so I get a Vite + Vue 3 + TypeScript + Vue Router + Pinia baseline with generated config files.
+2. As a developer, I want TypeScript configured with strict mode, so type errors are caught at compile time from the very first file.
+3. As a developer, I want Vitest wired into the Vite pipeline, so the test runner shares the same build config with no separate setup.
+4. As a developer, I want ESLint configured from the start, so code quality is enforced on every commit.
+5. As a developer, I want to inspect the canonical `npm create pixi@latest` Vite scaffold in a temporary directory, so I understand the PixiJS project structure before merging it into the Vue project.
+6. As a developer, I want the final `src/` directory structure to be derived from what both scaffold tools generate, so the layout reflects the tools' conventions rather than an abstract pre-decision.
+7. As a developer, I want the PixiJS entry-point merged into the Vue project, so there is a single `package.json`, `vite.config.ts`, and `tsconfig.json`.
+8. As a developer, I want `pixi.js` and `@pixi/sound` as production dependencies, so the rendering engine and audio library are available from the first game file.
+9. As a developer, I want `@vue/test-utils` as a dev dependency, so Vue components can be mounted and queried in tests.
+10. As a developer, I want `@antfu/eslint-config` as the sole ESLint config, so Vue 3, TypeScript, and formatting rules are enforced without Prettier and without managing multiple plugins.
+11. As a developer, I want a PixiJS `Application` singleton module that exports `initApp(container)` and `destroyApp()`, so the rest of the codebase has a single non-reactive entry point to the renderer.
+12. As a developer, I want a root layout component that calls `initApp()` on mount and renders `<RouterView>` as an overlay above the canvas, so the PixiJS canvas is always alive regardless of the active route.
+13. As a developer, I want Vue Router configured in hash mode with three placeholder routes (`/`, `/game`, `/settings`), so navigation is verifiable as soon as the integration is wired.
+14. As a developer, I want `vite build` to produce a fully static `dist/` directory, so the output is deployable to GitHub Pages or Netlify without modification.
+15. As a developer, I want `npm run dev`, `npm run build`, `npm run test`, and `npm run lint` all passing after the merge, so the project is fully operational.
 
 ## Implementation Decisions
 
-### Framework Stack
+### Scaffolding tools
 
-- **Vue 3** (Composition API, `<script setup>` syntax) as the UI shell over the PixiJS canvas.
-- **Vite** as the build tool and dev server.
-- **TypeScript** with strict mode (`"strict": true`).
-- **Vue Router 4** in hash mode (`createWebHashHistory`) for screen navigation.
-- **Pinia** for state management.
-- **PixiJS v8** (`pixi.js` package) as the rendering engine.
+- Vue project: `npm create vue@latest` with TypeScript, Vue Router, Pinia, Vitest, and ESLint; Prettier and Playwright not selected.
+- PixiJS reference: `npm create pixi@latest` using the `bundler-vite` TypeScript template, run in a temporary directory for inspection only and discarded after the merge.
+- The final `src/` structure is decided during the merge, informed by both scaffold outputs.
 
-### Why Vue over Nuxt
+### ESLint
 
-Nuxt 3 was considered and rejected. This is a client-only SPA; SSR, server routes, and Nuxt's file-system conventions add overhead with no benefit for a game.
+- `@antfu/eslint-config` replaces whatever the Vue scaffold generates. No Prettier.
 
-### Why not `create-pixi` scaffolding
+### TypeScript
 
-`create-pixi` has no Vue template. Vue is added on top via `npm install` after scaffolding. The scaffolding approach is decided in a separate PRD.
+- `strict: true` must be present in the final `tsconfig.json`. Any PixiJS tsconfig options merged in must not remove or weaken it.
 
-### Developer Tooling
+### Vitest
 
-- **ESLint** with **`@antfu/eslint-config`** (Anthony Fu's opinionated flat config). It ships Vue 3, TypeScript, and formatting rules in one package, replacing the need for separate `eslint-plugin-vue` and `@vue/eslint-config-typescript` installs. No Prettier — ESLint rules handle formatting.
-- **Vitest** with a `happy-dom` environment for Vue component tests.
-- `@vue/test-utils` for mounting and querying Vue components in tests.
+- Environment: `happy-dom`. Globals: `true`.
 
-### Audio
+### PixiJS Application module
 
-- **`@pixi/sound`** as the audio library. It integrates directly with PixiJS's `Assets.load()` pipeline, so audio assets are loaded through the same bundle and cache system as sprites and spritesheets — eliminating a second asset-loading path.
-- Howler.js was considered and rejected: it requires a parallel asset-loading system entirely separate from `Assets`, which adds unnecessary complexity.
-- No server component needed; all audio assets are bundled as static files.
+- Exports `initApp(container: HTMLElement)` and `destroyApp()`.
+- `Application.init()` options: `resizeTo: container`, `autoDensity: true`, `antialias: false`, `preference: 'webgl'`.
+- This module imports nothing from Vue. It is a plain TypeScript module.
 
-### Input: Gamepad-First
+### Root layout component
 
-- **Gamepad is the primary input device.** All in-game actions must be reachable via a standard gamepad (Xbox/PlayStation layout).
-- Input is read through the **Web Gamepad API** (`navigator.getGamepads()`), polled each frame inside the game loop ticker. No third-party gamepad library is required at this stage.
-- Keyboard and mouse are supported as secondary fallbacks, but no feature may require them.
-- Each connected gamepad maps to one player by its gamepad index.
-- Input abstraction (a device-agnostic action layer) must be designed with gamepad as the canonical source; keyboard bindings are mapped onto that same action layer.
+- Calls `initApp` on mount with a full-viewport container element; calls `destroyApp` on unmount.
+- Renders a `<RouterView>` in an absolutely-positioned overlay (`z-index: 10`, `pointer-events: none`) above the canvas.
+- Is the parent component for all three routes in the router config so the canvas is never destroyed on navigation.
 
-### Local Shared-Screen Multiplayer
+### Vue Router
 
-- Multiplayer is **local, same-device, same-tab** only. No networking, WebSockets, or server state is involved.
-- Up to **4 players** are supported. Each connected gamepad maps to one player by its gamepad index (indices 0–3).
-- **Hot-join**: a player whose gamepad connects at any point during a session is added immediately with controls live. The simulation does not pause. No lobby phase is required to join.
-- **Keyboard fallback**: at most **one** keyboard player is supported at any time. Keyboard/mouse are secondary fallbacks for a single player only; players 2–4 must use gamepads.
-- The game simulation runs a single authoritative loop; all players advance the same world state.
-- This model requires no backend and is fully compatible with the static deployment target.
+- Hash mode (`createWebHashHistory`).
+- Three child routes under the layout component: `/` → MainMenuView, `/game` → GameView, `/settings` → SettingsView. All three are placeholder views for this PRD.
 
-### Deployment Target
+### Layer boundary
 
-- Fully static output (`dist/`) deployable to GitHub Pages or Netlify.
-- No server-side rendering, no API routes, no Node runtime at deployment.
-
-### PixiJS Sub-Skills to Install
-
-All sub-skills installed via `npx skills add pixijs/pixijs-skills`:
-
-| Sub-skill | Reason |
-|---|---|
-| `pixijs-application` | Core `Application.init()`, renderer, `app.stage` |
-| `pixijs-assets` | Spritesheet and asset bundle loading |
-| `pixijs-scene-container` | Scene graph, `zIndex`, transforms |
-| `pixijs-scene-sprite` | Buildings, units, terrain tiles |
-| `pixijs-scene-graphics` | Debug overlays, selection rings |
-| `pixijs-scene-text` | Floating labels, counters |
-| `pixijs-ticker` | Game loop delta time |
-| `pixijs-events` | Click/tap input for selecting entities |
-| `pixijs-performance` | Draw call optimisation, culling, `cacheAsTexture` |
-| `pixijs-scene-particle-container` | Crowds, smoke, ambient particles |
+- The game module (PixiJS) imports nothing from `vue`, `vue-router`, or `pinia`.
+- Vue components and Pinia stores import no PixiJS objects and store none in `ref()` or `reactive()`.
 
 ## Testing Decisions
 
-Testing strategy is deferred to the scaffolding PRD. The only decision made here is the choice of **Vitest** as the test runner.
+A good test for this scaffolding phase verifies observable behaviour at module or component boundaries — not implementation details. Tests should not assert on internal variable names, specific CSS class names, or PixiJS internals.
+
+The following is testable in this phase:
+
+- **`AppLayout` mounts and initialises PixiJS**: mock `initApp` and `destroyApp`, mount `AppLayout` with `@vue/test-utils`, assert `initApp` was called with an `HTMLElement` on mount and `destroyApp` was called on unmount.
+- **Router navigation**: mount the full app with `createMemoryHistory`, push to `/`, `/game`, and `/settings`, assert the correct view component is rendered via `RouterView`.
+
+Game-loop logic, PixiJS rendering, and Pinia stores are not testable in this phase because those modules are empty placeholders. Tests for them belong to the PRDs that implement them.
 
 ## Out of Scope
 
-- Project scaffolding, directory structure, and initial file creation — separate PRD.
-- PixiJS integration pattern (`usePixiApp` composable, overlay layout) — separate PRD.
-- Pinia store design — separate PRD.
-- Vue Router route definitions — separate PRD.
 - Game mechanics, colony simulation, entity AI, pathfinding — future PRDs.
-- Online/networked multiplayer — explicitly out of scope; local shared-screen only.
-- Mobile packaging (Capacitor, Cordova, etc.), CI/CD, asset pipeline tooling, accessibility, i18n.
+- Pinia store definitions — separate PRD.
+- PixiJS scene graph construction — separate PRD.
+- Input abstraction layer and gamepad polling — separate PRD.
+- Audio loading and playback — separate PRD.
+- HUD component implementation — separate PRDs.
+- CI/CD, deployment pipeline, asset compression tooling.
+- Online/networked multiplayer — explicitly out of scope for the entire project.
+- Mobile packaging (Capacitor, Cordova, etc.), accessibility, i18n.
 
 ## Further Notes
 
-- PixiJS objects must never be wrapped in Vue's `ref()` or `reactive()`. Vue's Proxy-based reactivity adds per-property tracking overhead that is destructive to game-loop performance on scene graph nodes or typed arrays. This constraint must be respected in all future implementation PRDs.
-- **Pinia write contract**: Pinia stores hold HUD/menu-visible summary state only (resource totals, game phase, active menu, player scores). Per-entity state (positions, velocity, health) lives exclusively in PixiJS objects and game-world data structures — never in Pinia. The game loop writes to Pinia only when a value meaningfully changes (event-rate, not frame-rate), so Vue re-renders are not triggered every tick.
-- **PixiJS Application lifecycle**: `Application.init()` is called eagerly on app mount, before any Vue Router route renders. The canvas element is mounted once at the root layout component and persists for the full session. It is never destroyed or recreated on route navigation.
-- Vue Router hash mode can be migrated to history mode later if the host supports URL rewriting (`_redirects` on Netlify, `nginx` rewrite rules, etc.).
+- PixiJS objects must never be wrapped in Vue's `ref()` or `reactive()`. This constraint is enforced architecturally by the directory split: `src/game/` is a Vue-free zone. Future implementation PRDs must respect this.
+- `@antfu/eslint-config` enables `no-console` by default. During scaffolding, suppress it for `src/game/app.ts` with an inline disable comment if `console.warn` is used for renderer fallback logging.
+- The `happy-dom` test environment has no WebGL support. All tests that touch `src/game/` must mock `initApp` and `destroyApp` at the module boundary; they must not instantiate a real `Application`.
+- Technology stack decisions (framework choices, audio library rationale, input model, multiplayer model, deployment target) are recorded in the previous decisions document and are not repeated here.
