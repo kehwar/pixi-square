@@ -1,6 +1,7 @@
 # Plan: Grid World MVP
 
-> Source PRD: docs/prd/grid-world-mvp.md
+> Archived: 2026-04-21
+> Source PRD: docs/archive/grid-world-mvp-prd.md
 
 ## Architectural decisions
 

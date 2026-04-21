@@ -20,6 +20,16 @@ src/
   App.vue           ← mounts <RouterView>
   game/             ← PixiJS code — no Vue/Pinia/Router imports allowed here
     app.ts          ← Application singleton (initApp / destroyApp)
+    simulation/     ← pure TypeScript game logic (no PixiJS)
+      grid.ts       ← 200×200 tile grid + passability
+      unit.ts       ← Unit type (player | ai)
+      world.ts      ← World + WorldFactory, tick loop, AI wandering
+      pathfinder.ts ← A* 8-directional pathfinder
+    renderer/       ← PixiJS rendering (reads simulation state)
+      game-scene.ts     ← composes renderers + ticker
+      grid-renderer.ts  ← draws tile grid
+      unit-renderer.ts  ← draws colonist squares
+      camera-controller.ts ← follow-cam + mouse-wheel zoom
   views/
     AppLayout.vue   ← root layout: persistent canvas + UI overlay
     MainMenuView.vue

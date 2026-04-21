@@ -1,3 +1,5 @@
+> Archived: 2026-04-21
+
 ## Problem Statement
 
 The game currently has a working Vue + PixiJS integration shell but no actual game content. The PixiJS canvas renders a placeholder bunny demo. The three route views (`#/`, `#/game`, `#/settings`) are empty stubs. There is no game world, no units, no interaction, and no simulation logic. Before anything else can be built — menus, settings, progression — there must be a minimal but real, playable game scene to serve as the foundation.
