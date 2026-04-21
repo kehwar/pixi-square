@@ -1,6 +1,7 @@
 import { Application } from 'pixi.js'
 
 import { GameScene } from './renderer/game-scene'
+import { WorldFactory } from './simulation/world'
 
 let app: Application | null = null
 let gameScene: GameScene | null = null
@@ -20,7 +21,8 @@ export async function initApp(container: HTMLElement): Promise<void> {
 
   container.appendChild(app.canvas)
 
-  gameScene = new GameScene(app)
+  const world = WorldFactory.create()
+  gameScene = new GameScene(app, world)
   gameScene.start()
 }
 

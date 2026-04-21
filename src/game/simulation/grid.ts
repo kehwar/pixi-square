@@ -7,6 +7,7 @@ export interface Tile {
 export class Grid {
   static readonly COLS = 200
   static readonly ROWS = 200
+  static readonly TILE_SIZE = 32 // world-space pixels per tile
   static readonly OBSTACLE_DENSITY = 0.1
 
   private readonly tiles: readonly (readonly Tile[])[]

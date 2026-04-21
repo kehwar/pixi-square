@@ -46,6 +46,8 @@ Create the `Grid` simulation module and wire a `GameScene` into `app.ts` so the 
 
 ## Phase 2: Player Colonist Spawns
 
+> ✅ Completed — Unit + World models added; UnitRenderer draws player as gold square; CameraController centers on player at startup and handles mouse-wheel zoom (0.25×–2×) with grid-bounds clamping.
+
 **User stories**: 4, 5, 6
 
 ### What to build
@@ -54,10 +56,23 @@ Add the `Unit` model and `WorldFactory` (spawning one player unit at a random pa
 
 ### Acceptance criteria
 
-- [ ] A single player colonist appears on the grid as a distinctly colored square at a passable tile.
-- [ ] The camera starts centered on the player colonist.
-- [ ] Scrolling the mouse wheel zooms in and out, clamped to the 0.25×–2× range.
-- [ ] The camera does not allow the viewport to pan outside the grid bounds when zooming.
+- [x] A single player colonist appears on the grid as a distinctly colored square at a passable tile.
+- [x] The camera starts centered on the player colonist.
+- [x] Scrolling the mouse wheel zooms in and out, clamped to the 0.25×–2× range.
+- [x] The camera does not allow the viewport to pan outside the grid bounds when zooming.
+
+### Notes
+
+- **TILE_SIZE promoted to Grid constant**: `Grid.TILE_SIZE = 32` was added to the simulation layer so both renderers can reference it without duplicating the literal.
+- **Unit interface**: `src/game/simulation/unit.ts` — `id`, `type`, `col`, `row`, `pixelX`, `pixelY`, `speed`. Movement queue (`path`) intentionally deferred to Phase 3.
+- **World + WorldFactory**: `src/game/simulation/world.ts` — `World` owns a `Grid` and a `Unit[]`, exposes `getGrid()` and `getState()`. `WorldFactory.create()` places one player unit at a random passable tile via rejection sampling (reliable at 90% passable density). Module-level `nextId` counter generates stable string IDs.
+- **UnitRenderer**: `src/game/renderer/unit-renderer.ts` — Draws each unit as a colored square (gold for player, royal blue for AI). Shape is drawn once on first encounter; subsequent calls only update `x`/`y`. Designed to handle multiple units for Phase 4.
+- **CameraController**: `src/game/renderer/camera-controller.ts` — `centerOnPlayer()` computes stage offset to place the player pixel position at screen center, then calls `clampPosition()`. Wheel zoom scales the stage and calls `centerOnPlayer()` on every zoom step, keeping the player unit centered (or as close as bounds allow). Cursor-anchored zoom was tried and reverted — player-centered zoom is the correct UX for this game.
+- **GameScene updated**: now receives `World` from `app.ts`; constructs `GridRenderer`, `UnitRenderer`, and `CameraController`; calls `centerOnPlayer()` and `attachEvents()` in `start()`, `detachEvents()` in `stop()`.
+- **app.ts updated**: calls `WorldFactory.create()` before constructing `GameScene`, passes world in.
+- **No ticker callback added**: units are static in Phase 2; the per-frame update loop will be wired in Phase 3 when `World.tick()` is introduced.
+- **Tests added**: `src/game/simulation/__tests__/world.spec.ts` (8 tests — WorldFactory spawn invariants, World accessors); `src/game/renderer/__tests__/camera-controller.spec.ts` (6 tests — centering, clamping, zoom bounds). `CameraController` tested with a plain-object `Application` mock; no PixiJS involved.
+- **New files**: `src/game/simulation/unit.ts`, `src/game/simulation/world.ts`, `src/game/renderer/unit-renderer.ts`, `src/game/renderer/camera-controller.ts`, `src/game/simulation/__tests__/world.spec.ts`, `src/game/renderer/__tests__/camera-controller.spec.ts`.
 
 ---
 
