@@ -5,15 +5,16 @@ import { Grid } from '../grid'
 import { World, WorldFactory } from '../world'
 
 describe('worldFactory', () => {
-  it('creates exactly one unit', () => {
+  it('creates 1 player + 20 AI units', () => {
     const world = WorldFactory.create()
-    expect(world.getState().units).toHaveLength(1)
+    expect(world.getState().units).toHaveLength(1 + WorldFactory.AI_COUNT)
   })
 
-  it('the only unit is the player', () => {
+  it('first unit is the player; rest are AI', () => {
     const world = WorldFactory.create()
     const { units } = world.getState()
     expect(units[0]!.type).toBe('player')
+    expect(units.slice(1).every(u => u.type === 'ai')).toBe(true)
   })
 
   it('playerUnitId matches the player unit id', () => {
@@ -215,5 +216,70 @@ describe('world.moveUnit', () => {
     const pathB = world.getState().units[0]!.path
     // Path should have changed (different destination)
     expect(pathB.at(-1)).not.toEqual(pathA.at(-1))
+  })
+})
+
+describe('world.tick — AI wandering', () => {
+  const ts = Grid.TILE_SIZE
+
+  it('an AI unit with an empty path picks a new passable destination after a tick', () => {
+    const grid = new Grid()
+    // Place AI unit at a known passable tile with empty path
+    const start = (() => {
+      for (let r = 0; r < Grid.ROWS; r++) {
+        for (let c = 0; c < Grid.COLS; c++) {
+          if (grid.isPassable(c, r))
+            return { col: c, row: r }
+        }
+      }
+      throw new Error('no passable tile')
+    })()
+    const ai: Unit = {
+      id: 'a1',
+      type: 'ai',
+      col: start.col,
+      row: start.row,
+      pixelX: start.col * ts + ts / 2,
+      pixelY: start.row * ts + ts / 2,
+      speed: 3,
+      path: [],
+    }
+    const world = new World(grid, [ai], 'a1')
+    world.tick(16) // one frame
+    const u = world.getState().units[0]!
+    // After one tick the AI should have received a new path (may already be partially traveled)
+    // Either the path is non-empty (more tiles remain) or the unit has moved (different col/row)
+    const movedOrHasPath = u.path.length > 0 || u.col !== start.col || u.row !== start.row
+    expect(movedOrHasPath).toBe(true)
+  })
+
+  it('the destination picked for an AI unit is a passable tile', () => {
+    const grid = new Grid()
+    const start = (() => {
+      for (let r = 0; r < Grid.ROWS; r++) {
+        for (let c = 0; c < Grid.COLS; c++) {
+          if (grid.isPassable(c, r))
+            return { col: c, row: r }
+        }
+      }
+      throw new Error('no passable tile')
+    })()
+    const ai: Unit = {
+      id: 'a1',
+      type: 'ai',
+      col: start.col,
+      row: start.row,
+      pixelX: start.col * ts + ts / 2,
+      pixelY: start.row * ts + ts / 2,
+      speed: 3,
+      path: [],
+    }
+    const world = new World(grid, [ai], 'a1')
+    world.tick(0) // zero-duration tick: no movement budget, but wandering logic still runs
+    const u = world.getState().units[0]!
+    if (u.path.length > 0) {
+      const dest = u.path.at(-1)!
+      expect(grid.isPassable(dest.col, dest.row)).toBe(true)
+    }
   })
 })

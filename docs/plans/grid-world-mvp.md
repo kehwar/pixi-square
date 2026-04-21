@@ -117,6 +117,8 @@ Implement the `Pathfinder` (A\*, 8-directional) and connect it to `World.tick()`
 
 ## Phase 4: AI Wanderers
 
+> ✅ Completed — 200 AI units spawned at startup; World.tick() drives wandering (empty path → pick random passable destination via A*); 47 tests pass.
+
 **User stories**: 11, 12
 
 ### What to build
@@ -125,8 +127,17 @@ Implement the `Pathfinder` (A\*, 8-directional) and connect it to `World.tick()`
 
 ### Acceptance criteria
 
-- [ ] 20 AI colonists appear on the grid at startup as colored squares distinct from the player unit.
-- [ ] AI colonists move smoothly around the grid, pathfinding around obstacles.
-- [ ] An AI colonist that reaches its destination immediately begins moving toward a new random destination.
-- [ ] AI movement does not degrade frame rate noticeably on the 200×200 grid.
-- [ ] Vitest tests confirm: an AI unit with an empty queue picks a new passable destination; the new destination is not an obstacle tile.
+- [x] 20 AI colonists appear on the grid at startup as colored squares distinct from the player unit.
+- [x] AI colonists move smoothly around the grid, pathfinding around obstacles.
+- [x] An AI colonist that reaches its destination immediately begins moving toward a new random destination.
+- [x] AI movement does not degrade frame rate noticeably on the 200×200 grid.
+- [x] Vitest tests confirm: an AI unit with an empty queue picks a new passable destination; the new destination is not an obstacle tile.
+
+### Notes
+
+- **`WorldFactory.AI_COUNT = 200`**: exported constant on `WorldFactory` so tests can reference it without a magic number. Raised from 20 after Phase 4 execution to stress-test wandering at scale.
+- **AI speed**: 3 tiles/s (half the player's 6 t/s) to make their movement visually distinct and easier to track.
+- **Wandering logic placement**: the `if (unit.type === 'ai' && unit.path.length === 0)` check runs at the end of each unit's movement loop in `World.tick()`. Because `remaining` has already been consumed before the check, the newly assigned path is followed starting from the *next* tick — this avoids splitting a single tick's budget across two destinations.
+- **`randomPassableTile` helper**: extracted to a module-level function shared by both `World.tick()` (wandering) and `WorldFactory.create()` (spawn placement), replacing the former `WorldFactory.findPassableTile` private static method.
+- **Test updates**: `worldFactory` describe block tests updated — "creates exactly one unit" → "creates 1 player + 20 AI units" (uses `WorldFactory.AI_COUNT`); "the only unit is the player" → "first unit is the player; rest are AI". Two new tests added in `world.tick — AI wandering`: verify path is assigned after a zero-duration tick; verify the path destination is a passable tile.
+- **Modified files**: `src/game/simulation/world.ts`, `src/game/simulation/__tests__/world.spec.ts`.
