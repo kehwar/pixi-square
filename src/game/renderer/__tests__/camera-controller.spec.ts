@@ -38,7 +38,7 @@ function makeWorld(pixelX: number, pixelY: number): World {
   const ts = Grid.TILE_SIZE
   const col = Math.floor(pixelX / ts)
   const row = Math.floor(pixelY / ts)
-  const player: Unit = { id: 'p1', type: 'player', col, row, pixelX, pixelY, speed: 2 }
+  const player: Unit = { id: 'p1', type: 'player', col, row, pixelX, pixelY, speed: 2, path: [] }
   return new World(grid, [player], 'p1')
 }
 

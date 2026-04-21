@@ -10,8 +10,8 @@
 - **Tile coordinate system**: integer `(col, row)`, 0-based, origin top-left.
 - **Key models**: `Grid` (tile matrix + passability), `Unit` (type: `player` | `ai`, tile position, pixel position, movement queue), `World` (owns grid + units, drives tick).
 - **Pathfinding**: A\* with 8-directional movement. Cardinal cost 1, diagonal cost √2.
-- **Movement speed**: 2 tiles per second (64 world-space pixels per second), frame-rate-independent via `deltaMs`.
-- **Camera**: follows player unit position, mouse-wheel zoom clamped between 0.25× and 2×.
+- **Movement speed**: 6 tiles per second (192 world-space pixels per second), frame-rate-independent via `deltaMs`.
+- **Camera**: exponential-lerp follow (`CAMERA_DECAY = 6`), mouse-wheel zoom clamped between 0.25× and 2×.
 - **No new Vue or Pinia additions** in this phase. `GameView.vue` remains a transparent stub.
 
 ---
@@ -78,6 +78,8 @@ Add the `Unit` model and `WorldFactory` (spawning one player unit at a random pa
 
 ## Phase 3: Click-to-Move with Pathfinding
 
+> ✅ Completed — Pathfinder (A*, 8-directional) added; World.tick() and World.moveUnit() implemented; GameScene wired with ticker callback and canvas click handler; 43 tests pass.
+
 **User stories**: 7, 8, 9, 10, 14
 
 ### What to build
@@ -86,13 +88,30 @@ Implement the `Pathfinder` (A\*, 8-directional) and connect it to `World.tick()`
 
 ### Acceptance criteria
 
-- [ ] Clicking a passable tile causes the player colonist to begin moving toward it smoothly.
-- [ ] The colonist moves at 2 tiles per second regardless of frame rate.
-- [ ] Diagonal movement occurs where it shortens the path.
-- [ ] The path never crosses an obstacle tile.
-- [ ] Clicking a new tile while the colonist is mid-path cancels the old path and starts a new one.
-- [ ] Clicking an obstacle tile does nothing (no movement, no error).
-- [ ] Vitest tests confirm: Pathfinder returns a valid path between two passable tiles; returns null when the destination is an obstacle; the path contains no obstacle tiles; path from a tile to itself is trivial; `World.tick()` advances unit pixel position; unit dequeues next waypoint on reaching tile center; unit stops at final destination; `moveUnit()` replaces an in-progress path.
+- [x] Clicking a passable tile causes the player colonist to begin moving toward it smoothly.
+- [x] The colonist moves at 2 tiles per second regardless of frame rate.
+- [x] Diagonal movement occurs where it shortens the path.
+- [x] The path never crosses an obstacle tile.
+- [x] Clicking a new tile while the colonist is mid-path cancels the old path and starts a new one.
+- [x] Clicking an obstacle tile does nothing (no movement, no error).
+- [x] Vitest tests confirm: Pathfinder returns a valid path between two passable tiles; returns null when the destination is an obstacle; the path contains no obstacle tiles; path from a tile to itself is trivial; `World.tick()` advances unit pixel position; unit dequeues next waypoint on reaching tile center; unit stops at final destination; `moveUnit()` replaces an in-progress path.
+
+### Notes
+
+- **Pathfinder** (`src/game/simulation/pathfinder.ts`): A* with 8-directional movement. Uses a `MinHeap` (binary min-heap) for the open set. Accepts any `{ isPassable(col, row): boolean }` object, keeping it decoupled from the `Grid` class and fully testable with plain stubs. Returns path excluding source, including destination; empty array for trivial (same-tile) case; null for obstacle or unreachable destinations.
+- **Tile key encoding**: `row * 1024 + col` (integer arithmetic, no string allocations). STRIDE=1024 safely fits any col < 1024.
+- **Octile distance heuristic**: `min(dx,dy) * √2 + |dx−dy|` — admissible and consistent for 8-directional movement.
+- **Unit.path added**: `TileCoord[]` (imported from `pathfinder.ts`) added to the `Unit` interface. `WorldFactory` and all test fixtures updated to include `path: []`.
+- **World.tick()**: Per-unit movement budget loop: `budget = speed * TILE_SIZE * (deltaMs / 1000)`. Loops while budget > 0 and path non-empty, consuming exact distance to tile center on overshoot — handles multiple waypoints per tick cleanly.
+- **World.moveUnit()**: Calls `findPath`; ignores null result (unreachable/obstacle) and empty result (already at destination). Non-null, non-empty result replaces the unit's path entirely.
+- **GameScene click handler**: Converts `event.offsetX/Y` to world coordinates via `(screenPos - stage.position) / stage.scale`, then floors to tile indices. Guards against out-of-bounds clicks are handled implicitly by `World.moveUnit` → `findPath` → `grid.isPassable`.
+- **GameScene ticker**: `world.tick(ticker.deltaMS)` → `unitRenderer.update()` → `cameraController.followPlayer(ticker.deltaMS)` each frame.
+- **Diagonal corner-cutting blocked**: a diagonal move is only allowed when both cardinal neighbours (col+dc, row) and (col, row+dr) are passable, preventing clipping through obstacle corners. 2 new tests added to `pathfinder.spec.ts`.
+- **Player speed**: set to 6 tiles/s in `WorldFactory`.
+- **Camera follow — exponential lerp**: `CameraController.followPlayer(deltaMs)` replaces `centerOnPlayer()` in the tick loop. Uses `factor = 1 - e^(-6 * dt)` so speed is proportional to distance — fast when far, glides to a stop when close. No mode switching. `centerOnPlayer()` retained for startup snap and post-zoom snap.
+- **Type-check / lint fixes**: `tsconfig.vitest.json` lib extended with `ES2022.Array` (enables `Array.prototype.at` in tests); camera-controller test fixture updated with `path: []`; dead variable removed from `pathfinder.spec.ts`.
+- **New files**: `src/game/simulation/pathfinder.ts`, `src/game/simulation/__tests__/pathfinder.spec.ts`.
+- **Modified files**: `src/game/simulation/unit.ts`, `src/game/simulation/world.ts`, `src/game/renderer/game-scene.ts`, `src/game/renderer/camera-controller.ts`, `src/game/simulation/__tests__/world.spec.ts`, `src/game/renderer/__tests__/camera-controller.spec.ts`, `tsconfig.vitest.json`.
 
 ---
 

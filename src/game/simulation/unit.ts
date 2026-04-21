@@ -1,3 +1,5 @@
+import type { TileCoord } from './pathfinder'
+
 export type UnitType = 'player' | 'ai'
 
 export interface Unit {
@@ -8,4 +10,5 @@ export interface Unit {
   pixelX: number
   pixelY: number
   readonly speed: number // tiles per second
+  path: TileCoord[]
 }
