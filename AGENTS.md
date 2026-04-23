@@ -24,4 +24,4 @@ npm run lint         # ESLint auto-fix
 
 ## Archived Docs
 
-`docs/archive/` contains completed PRDs and implementation plans from prior phases. They are historical records only — do not treat their contents as pending work or current guidance.
+`docs/development-log/` contains dev log entries for completed phases. `docs/prd/` and `docs/plans/` hold active or future work. Treat completed log entries as historical records only — do not treat their contents as pending work or current guidance.

@@ -1,12 +1,12 @@
 # pixi-square
 
-A colony management game built with [PixiJS v8](https://pixijs.com/) (WebGL renderer) and [Vue 3](https://vuejs.org/). PixiJS drives all rendering; Vue handles the UI overlay and application shell.
+A colony management game built with [Phaser 4](https://phaser.io/) and [Vue 3](https://vuejs.org/). Phaser drives all rendering, cameras, and input; Vue handles the UI overlay and application shell.
 
 ## Tech stack
 
 | Layer | Library |
 |---|---|
-| Renderer | PixiJS v8 + `@pixi/sound` |
+| Game engine | Phaser 4 |
 | UI / routing | Vue 3, Vue Router (hash mode), Pinia |
 | Build | Vite + `vue-tsc` |
 | Tests | Vitest + `@vue/test-utils` + happy-dom |
@@ -18,18 +18,22 @@ A colony management game built with [PixiJS v8](https://pixijs.com/) (WebGL rend
 src/
   main.ts           ← Vue entry point
   App.vue           ← mounts <RouterView>
-  game/             ← PixiJS code — no Vue/Pinia/Router imports allowed here
-    app.ts          ← Application singleton (initApp / destroyApp)
-    simulation/     ← pure TypeScript game logic (no PixiJS)
+  game/             ← Phaser code — no Vue/Pinia/Router imports allowed here
+    main.ts         ← StartGame factory (creates Phaser.Game instance)
+    EventBus.ts     ← Phaser EventEmitter singleton bridging game ↔ Vue
+    scenes/         ← Phaser scene chain
+      Boot.ts       ← immediately starts Preloader
+      Preloader.ts  ← asset loading; starts MainMenu
+      MainMenu.ts   ← waits for start-game EventBus event
+      Game.ts       ← grid + unit rendering, simulation tick
+      GameOver.ts
+    simulation/     ← pure TypeScript game logic (no Phaser)
       grid.ts       ← 200×200 tile grid + passability
-      unit.ts       ← Unit type (player | ai)
-      world.ts      ← World + WorldFactory, tick loop, AI wandering
+      unit.ts       ← Unit type (controller, idleMs)
+      world.ts      ← World + WorldFactory, tick loop, wandering
       pathfinder.ts ← A* 8-directional pathfinder
-    renderer/       ← PixiJS rendering (reads simulation state)
-      game-scene.ts     ← composes renderers + ticker
-      grid-renderer.ts  ← draws tile grid
-      unit-renderer.ts  ← draws colonist squares
-      camera-controller.ts ← follow-cam + mouse-wheel zoom
+  components/
+    PhaserGame.vue  ← mounts/destroys Phaser canvas on mount/unmount
   views/
     AppLayout.vue   ← root layout: persistent canvas + UI overlay
     MainMenuView.vue
@@ -37,7 +41,6 @@ src/
     SettingsView.vue
   router/           ← hash-mode router (#/, #/game, #/settings)
   stores/           ← Pinia stores
-  components/       ← reusable Vue components
   assets/           ← CSS and static assets
 ```
 
