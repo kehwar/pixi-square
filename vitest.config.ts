@@ -8,7 +8,7 @@ export default mergeConfig(
     test: {
       environment: 'happy-dom',
       globals: true,
-      exclude: [...configDefaults.exclude, 'e2e/**'],
+      exclude: [...configDefaults.exclude, 'e2e/**', 'references/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
     },
   }),

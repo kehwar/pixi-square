@@ -2,19 +2,21 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { initApp } from '@/game/app'
 import { routes } from '@/router'
 import GameView from '@/views/GameView.vue'
 import MainMenuView from '@/views/MainMenuView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 
-vi.mock('@/game/app')
+// Prevent Phaser from running canvas detection during module load in happy-dom.
+vi.mock('@/game/main', () => ({
+  StartGame: vi.fn(() => ({ destroy: vi.fn() })),
+}))
 
 const TestApp = defineComponent({ template: '<RouterView />' })
 
 describe('router', () => {
   beforeEach(() => {
-    vi.mocked(initApp).mockResolvedValue(undefined)
+    vi.clearAllMocks()
   })
 
   it('renders MainMenuView at /', async () => {

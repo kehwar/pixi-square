@@ -16,9 +16,8 @@
     "lint": "eslint . --fix --cache"
   },
   "dependencies": {
-    "@pixi/sound": "^6.0.1",
+    "phaser": "^4.0.0",
     "pinia": "^3.0.4",
-    "pixi.js": "^8.18.1",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"
   },

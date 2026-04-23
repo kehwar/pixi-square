@@ -1,20 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, useTemplateRef } from 'vue'
-import { destroyApp, initApp } from '@/game/app'
-
-const canvasContainer = useTemplateRef<HTMLElement>('canvas-container')
-
-onMounted(async () => {
-  await initApp(canvasContainer.value!)
-})
-
-onUnmounted(() => {
-  destroyApp()
-})
+import PhaserGame from '@/components/PhaserGame.vue'
 </script>
 
 <template>
-  <div ref="canvas-container" class="canvas-container" />
+  <PhaserGame class="canvas-container" />
   <div class="ui-overlay">
     <RouterView />
   </div>

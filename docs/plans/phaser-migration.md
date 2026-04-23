@@ -15,6 +15,8 @@
 
 ## Phase 1: Phaser Bootstrap
 
+> ✅ Completed — PixiJS archived to references/pixi-vue-demo; phaser 4 installed; PhaserGame.vue + StartGame factory wired into AppLayout; Boot/Preloader/MainMenu/Game/GameOver scene stubs created; AGENTS.md updated; all 40 tests pass, type-check and lint clean.
+
 **User stories**: 1, 2, 4, 30
 
 ### What to build
@@ -31,14 +33,24 @@ The app must boot at all existing routes without errors. The Phaser canvas is vi
 
 ### Acceptance criteria
 
-- [ ] `references/pixi-vue-demo/` contains the archived PixiJS source (`app.ts`, renderer/, simulation/, views/, router/ etc.) as a snapshot.
-- [ ] `pixi.js` and `@pixi/sound` are removed from `package.json`; `phaser` is added and installed.
-- [ ] `npm run dev` starts without errors. The app loads at `#/` and `#/game` without a blank screen or console error.
-- [ ] The Phaser canvas is mounted inside the canvas-container div and is visible full-viewport.
-- [ ] The Vue UI overlay (`<RouterView />`) renders above the canvas at `z-index: 10`.
-- [ ] `onUnmounted` in `PhaserGame.vue` calls `game.destroy(true)` cleanly.
-- [ ] `AGENTS.md` boundary rule references Phaser, not PixiJS.
-- [ ] `npm run type-check` and `npm run lint` pass with zero errors.
+- [x] `references/pixi-vue-demo/` contains the archived PixiJS source (`app.ts`, renderer/, simulation/, views/, router/ etc.) as a snapshot.
+- [x] `pixi.js` and `@pixi/sound` are removed from `package.json`; `phaser` is added and installed.
+- [x] `npm run dev` starts without errors. The app loads at `#/` and `#/game` without a blank screen or console error.
+- [x] The Phaser canvas is mounted inside the canvas-container div and is visible full-viewport.
+- [x] The Vue UI overlay (`<RouterView />`) renders above the canvas at `z-index: 10`.
+- [x] `onUnmounted` in `PhaserGame.vue` calls `game.destroy(true)` cleanly.
+- [x] `AGENTS.md` boundary rule references Phaser, not PixiJS.
+- [x] `npm run type-check` and `npm run lint` pass with zero errors.
+
+### Notes
+
+- **pixi-vue-demo archive**: `references/pixi-vue-demo/` contains the complete working snapshot (src/, public/, package.json, all config files). `node_modules` was intentionally excluded — run `npm install` inside that folder to restore.
+- **Phaser canvas scaling**: `Scale.RESIZE` + `autoCenter: Scale.CENTER_BOTH` used in the Phaser config so the canvas fills the parent div. The parent div (`#game-container`) is rendered by `PhaserGame.vue` inside the `canvas-container` class element in `AppLayout.vue`.
+- **PhaserGame.vue Phaser isolation**: `PhaserGame.vue` does not import from `'phaser'` directly. It uses `ReturnType<typeof StartGame>` for the game instance type, keeping the Vue component free of direct Phaser imports per the boundary rule.
+- **Vitest: references excluded**: Added `'references/**'` to `vitest.config.ts` excludes so archived demo tests don't run alongside the live test suite.
+- **Vitest: Phaser canvas crash**: Phaser runs canvas detection at module-load time, which crashes in happy-dom. Fixed by adding `vi.mock('@/game/main', ...)` to `src/router/__tests__/index.spec.ts` (the only test that transitively imports phaser via router → AppLayout → PhaserGame.vue). The AppLayout spec was already safe because it mocks `PhaserGame.vue` directly.
+- **AppLayout spec rewritten**: Dropped the `initApp`/`destroyApp` lifecycle assertions; the new spec verifies the layout structure (game container + ui-overlay with RouterView).
+- **Router spec cleaned**: Removed unused `initApp` mock and import.
 
 ---
 

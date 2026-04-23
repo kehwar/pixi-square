@@ -4,11 +4,11 @@ See [README.md](README.md) for the full tech stack, project structure, and dev c
 
 ## Architecture
 
-**Boundary rule** — `src/game/` is a Vue-free zone. Files inside it must have zero imports from `vue`, `vue-router`, or `pinia`. Vue components and Pinia stores must have zero imports of PixiJS objects.
+**Boundary rule** — `src/game/` is a Vue-free zone. Files inside it must have zero imports from `vue`, `vue-router`, or `pinia`. Vue components and Pinia stores must have zero direct imports of Phaser objects; they interact with the game exclusively through `EventBus` and the `StartGame` factory.
 
-**Canvas model** — The PixiJS `Application` is a plain module-level singleton (`src/game/app.ts`). It must never be stored inside `ref()`, `reactive()`, or any other Vue reactive container.
+**Canvas model** — The Phaser `Game` instance is created by `PhaserGame.vue` on mount and destroyed on unmount. It must never be stored inside `ref()`, `reactive()`, or any other Vue reactive container.
 
-**Layer model** — `AppLayout.vue` renders a persistent full-viewport PixiJS canvas and a `position: fixed; z-index: 10` UI overlay (`<RouterView>`) on top. The canvas stays alive for the entire session; only the overlay content changes on navigation.
+**Layer model** — `AppLayout.vue` renders a persistent full-viewport Phaser canvas (`PhaserGame.vue`) and a `position: fixed; z-index: 10` UI overlay (`<RouterView>`) on top. The canvas stays alive for the entire session; only the overlay content changes on navigation.
 
 **Router** — Hash mode (`createWebHashHistory`). Routes: `#/` → `MainMenuView`, `#/game` → `GameView`, `#/settings` → `SettingsView`.
 
