@@ -1,10 +1,9 @@
 import type { TileCoord } from './pathfinder'
 
-export type UnitType = 'player' | 'ai'
-
 export interface Unit {
   readonly id: string
-  readonly type: UnitType
+  controller: 'p1' | 'p2' | null
+  idleMs: number
   col: number
   row: number
   pixelX: number

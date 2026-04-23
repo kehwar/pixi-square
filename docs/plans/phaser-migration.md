@@ -94,6 +94,8 @@ Wire the full 5-scene Phaser pipeline and connect it to the Vue layer via EventB
 
 ## Phase 3: Simulation Remodel + Wanderer Rendering
 
+> ✅ Completed — Unit type field removed; controller/idleMs added; World rewritten with claimUnit/releaseUnit/stepUnit/pathfindUnit/registerInput/getClaimedUnits/nearestUnclaimedUnit; WorldFactory creates 200 unclaimed units; world.spec.ts fully rewritten (41 tests); Game scene draws static grid once in create() and redraws all 200 wanderers each update(); camera centered on grid; 70/70 tests pass, type-check and lint clean.
+
 **User stories**: 11, 12, 25, 26, 27, 28, 29
 
 ### What to build
@@ -115,18 +117,28 @@ Migrate the simulation data model and rebuild the renderer layer on top of Phase
 
 ### Acceptance criteria
 
-- [ ] `WorldFactory.create()` returns 200 units all with `controller: null` and no `type` field.
-- [ ] `claimUnit('p1', id)` marks the unit, resets `idleMs` to 0, clears its path.
-- [ ] `releaseUnit('p1')` clears the controller; the unit resumes wandering on the next tick.
-- [ ] `stepUnit('p1', direction)` moves the unit one tile when passable; no-op into obstacles or out-of-bounds.
-- [ ] `registerInput('p1')` resets `idleMs` to 0 without moving.
-- [ ] `tick` auto-releases a unit when `idleMs >= 10 000`.
-- [ ] P2→P1 promotion is correct: releasing P1 while P2 holds a unit transfers that unit to `'p1'`, leaves `'p2'` unclaimed, and preserves `idleMs`.
-- [ ] `getClaimedUnits()` reflects live claim/release state for both controllers.
-- [ ] `nearestUnclaimedUnit(pixelX, pixelY)` returns the closest unclaimed unit by Euclidean distance.
-- [ ] The grid renders procedurally in the Game scene with correct tile colors and border lines.
-- [ ] All 200 wanderers are visible as royalblue squares moving around the grid.
-- [ ] All simulation unit tests pass. `npm run type-check` and `npm run lint` pass.
+- [x] `WorldFactory.create()` returns 200 units all with `controller: null` and no `type` field.
+- [x] `claimUnit('p1', id)` marks the unit, resets `idleMs` to 0, clears its path.
+- [x] `releaseUnit('p1')` clears the controller; the unit resumes wandering on the next tick.
+- [x] `stepUnit('p1', direction)` moves the unit one tile when passable; no-op into obstacles or out-of-bounds.
+- [x] `registerInput('p1')` resets `idleMs` to 0 without moving.
+- [x] `tick` auto-releases a unit when `idleMs >= 10 000`.
+- [x] P2→P1 promotion is correct: releasing P1 while P2 holds a unit transfers that unit to `'p1'`, leaves `'p2'` unclaimed, and preserves `idleMs`.
+- [x] `getClaimedUnits()` reflects live claim/release state for both controllers.
+- [x] `nearestUnclaimedUnit(pixelX, pixelY)` returns the closest unclaimed unit by Euclidean distance.
+- [x] The grid renders procedurally in the Game scene with correct tile colors and border lines.
+- [x] All 200 wanderers are visible as royalblue squares moving around the grid.
+- [x] All simulation unit tests pass. `npm run test:unit`, `npm run type-check`, and `npm run lint` pass.
+
+### Notes
+
+- **`WorldFactory.AI_COUNT` renamed**: renamed to `UNIT_COUNT = 200` since all units are now controller-neutral wanderers with no player/AI distinction.
+- **`moveUnit` removed**: replaced entirely by `pathfindUnit(controller, col, row)`. The controller-based API is cleaner and safer than passing raw unit IDs into the renderer.
+- **Grid draw performance**: drawing 40,000 tiles with minimal `fillStyle` switches — fill all passable tiles in one pass (one `fillStyle` call), then all obstacle tiles in a second pass. This avoids 40,000 state switches in the Graphics command buffer.
+- **Wandering tick tests**: two tick tests (`dequeues waypoint` and `unit stops at final destination`) needed `controller: 'p1'` to prevent the unit from immediately receiving a new wander path after reaching its destination. Unclaimed units always re-wander when their path empties.
+- **`World` constructor**: removed `playerUnitId` parameter. Constructor now takes `(grid: Grid, units: Unit[])` only.
+- **`Controller` and `Direction` types**: exported from `world.ts` so Phase 4 (Game scene input) can import them without depending on unit.ts internals.
+- **Camera**: `cameras.main.centerOn(gridWidth / 2, gridHeight / 2)` positions the viewport over the center of the 6400×6400 world. No follow implemented yet (Phase 4).
 
 ---
 
