@@ -56,6 +56,8 @@ The app must boot at all existing routes without errors. The Phaser canvas is vi
 
 ## Phase 2: Scene Lifecycle & EventBus
 
+> ✅ Completed — EventBus singleton created; all 5 scenes emit current-scene-ready; MainMenu listens for start-game; Game scene emits navigate; PhaserGame.vue exposes scene ref; MainMenuView gets Play button; AppLayout wires navigate → vue-router; 6 EventBus contract tests added; 46/46 tests pass, type-check and lint clean.
+
 **User stories**: 3, 5, 6, 7, 8, 9, 10
 
 ### What to build
@@ -72,13 +74,21 @@ Wire the full 5-scene Phaser pipeline and connect it to the Vue layer via EventB
 
 ### Acceptance criteria
 
-- [ ] `EventBus` is a `Phaser.Events.EventEmitter` singleton with no Vue imports.
-- [ ] Booting the app executes Boot → Preloader → MainMenu in sequence; each emits `current-scene-ready`.
-- [ ] Clicking "Play" in the Vue MainMenuView triggers the Game scene to start (observable via console or `current-scene-ready` payload).
-- [ ] `GameOver` scene emits `game-over` on EventBus when it runs `create()`.
-- [ ] `PhaserGame.vue` correctly exposes the active scene reference via `defineExpose`.
-- [ ] EventBus contract tests pass: `on` receives emitted payloads; `off` stops the listener.
-- [ ] `npm run test:unit`, `npm run type-check`, and `npm run lint` all pass.
+- [x] `EventBus` is a `Phaser.Events.EventEmitter` singleton with no Vue imports.
+- [x] Booting the app executes Boot → Preloader → MainMenu in sequence; each emits `current-scene-ready`.
+- [x] Clicking "Play" in the Vue MainMenuView triggers the Game scene to start (observable via console or `current-scene-ready` payload).
+- [x] `GameOver` scene emits `game-over` on EventBus when it runs `create()`.
+- [x] `PhaserGame.vue` correctly exposes the active scene reference via `defineExpose`.
+- [x] EventBus contract tests pass: `on` receives emitted payloads; `off` stops the listener.
+- [x] `npm run test:unit`, `npm run type-check`, and `npm run lint` all pass.
+
+### Notes
+
+- **Phaser EventEmitter in tests**: importing `phaser` crashes happy-dom at module load (canvas detection). `EventBus.spec.ts` mocks `phaser` with a local in-process `EventEmitter` that satisfies the same interface. This tests the EventBus contract (on/off/once/emit/removeAllListeners) without requiring a browser environment.
+- **AppLayout.spec and router/index.spec**: both now transitively import `@/game/EventBus` (via AppLayout.vue). Each spec adds `vi.mock('@/game/EventBus', ...)` with a stub of the used methods to prevent Phaser module load.
+- **AppLayout.vue navigate wiring**: `onMounted` registers `EventBus.on('navigate', onNavigate)` and `onUnmounted` calls `EventBus.off` to clean up. `onNavigate` calls `router.push(path)`.
+- **PhaserGame.vue expose**: exposes `{ scene: Ref<Phaser.Scene | null>, game: Ref<GameInstance | null> }` via `defineExpose`. The `game` ref is initialized as `ref(null)` and set in `onMounted`; exposing via `ref()` ensures reactivity for parent consumers.
+- **MainMenuView Play button**: has `style="pointer-events: auto"` since the ui-overlay uses `pointer-events: none` — the button must re-enable pointer events for itself.
 
 ---
 

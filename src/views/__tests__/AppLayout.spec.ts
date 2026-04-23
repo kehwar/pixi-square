@@ -8,6 +8,10 @@ vi.mock('@/components/PhaserGame.vue', () => ({
   default: defineComponent({ template: '<div id="game-container" />' }),
 }))
 
+vi.mock('@/game/EventBus', () => ({
+  EventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), once: vi.fn(), removeAllListeners: vi.fn() },
+}))
+
 const DummyView = defineComponent({ template: '<div class="dummy-view" />' })
 
 describe('appLayout', () => {

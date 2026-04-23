@@ -11,6 +11,9 @@ import SettingsView from '@/views/SettingsView.vue'
 vi.mock('@/game/main', () => ({
   StartGame: vi.fn(() => ({ destroy: vi.fn() })),
 }))
+vi.mock('@/game/EventBus', () => ({
+  EventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), once: vi.fn(), removeAllListeners: vi.fn() },
+}))
 
 const TestApp = defineComponent({ template: '<RouterView />' })
 

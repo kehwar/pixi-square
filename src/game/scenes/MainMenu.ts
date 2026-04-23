@@ -1,4 +1,5 @@
 import { Scene } from 'phaser'
+import { EventBus } from '../EventBus'
 
 export class MainMenu extends Scene {
   constructor() {
@@ -6,6 +7,9 @@ export class MainMenu extends Scene {
   }
 
   create(): void {
-    // Stub — EventBus wiring and navigation in Phase 2.
+    EventBus.emit('current-scene-ready', this)
+    EventBus.once('start-game', () => {
+      this.scene.start('Game')
+    })
   }
 }

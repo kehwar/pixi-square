@@ -1,5 +1,22 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import PhaserGame from '@/components/PhaserGame.vue'
+import { EventBus } from '@/game/EventBus'
+
+const router = useRouter()
+
+function onNavigate(path: string): void {
+  router.push(path)
+}
+
+onMounted(() => {
+  EventBus.on('navigate', onNavigate)
+})
+
+onUnmounted(() => {
+  EventBus.off('navigate', onNavigate)
+})
 </script>
 
 <template>

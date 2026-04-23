@@ -1,4 +1,5 @@
 import { Scene } from 'phaser'
+import { EventBus } from '../EventBus'
 
 export class Game extends Scene {
   constructor() {
@@ -6,6 +7,7 @@ export class Game extends Scene {
   }
 
   create(): void {
-    // Stub — simulation and rendering in Phase 3.
+    EventBus.emit('current-scene-ready', this)
+    EventBus.emit('navigate', '/game')
   }
 }

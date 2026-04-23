@@ -1,4 +1,5 @@
 import { Scene } from 'phaser'
+import { EventBus } from '../EventBus'
 
 export class GameOver extends Scene {
   constructor() {
@@ -6,6 +7,7 @@ export class GameOver extends Scene {
   }
 
   create(): void {
-    // Stub — EventBus game-over signal in Phase 2.
+    EventBus.emit('current-scene-ready', this)
+    EventBus.emit('game-over')
   }
 }
