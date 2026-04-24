@@ -4,38 +4,41 @@
 
 ## Architectural decisions
 
-- **ECS library**: phatty — `GameScene` extends phatty `Scene`, all components extend phatty `Component`
-- **Entity model**: one world entity (grid + factory) + 200 unit entities
-- **Component priorities**: logic components default `0`; `UnitRendererComponent` priority `10`
-- **Grid constants**: `COLS=200`, `ROWS=200`, `TILE_SIZE=32`, `OBSTACLE_DENSITY=0.1` — live in `GridComponent`
+- **ECS library**: bitECS — `GameScene` extends plain `Phaser.Scene`; systems are plain exported functions; components are SoA arrays indexed by entity ID
+- **World context**: `createWorld<GameWorld>({ scene, events })` — systems access the Phaser scene and event emitter via `world.scene` / `world.events`; no class constructors or dependency injection
+- **Entity model**: one world entity (`worldEid`) + 200 unit entities
+- **Execution order**: `GameScene.update()` calls `MovementSystem.update(world, delta)` then `UnitRendererSystem.update(world)` each frame; `WanderingSystem` and `PathfindingSystem` have no `update()` — they are event-driven or on-demand
+- **Grid constants**: `COLS=200`, `ROWS=200`, `TILE_SIZE=32`, `OBSTACLE_DENSITY=0.1` — live in `GridSystem`
 - **New scene file**: `GameScene.ts` is created in Phase 1 alongside the existing `Game.ts`; `Game.ts` is deleted only in Phase 3 once `GameScene.ts` is fully functional
 - **Vue boundary**: `EventBus.ts` and `PhaserGame.vue` are never modified
-- **Deleted constructs (end-state)**: `Game.ts`, `Grid`, `World`, `WorldFactory`, `Unit`, `findPath`, `MinHeap` — fully replaced by `GameScene.ts` and ECS components
+- **Deleted constructs (end-state)**: `Game.ts`, `Grid`, `World`, `WorldFactory`, `Unit`, `findPath`, `MinHeap` — fully replaced by `GameScene.ts` and bitECS system files
 
 ---
 
-## Phase 1: phatty scaffold + grid rendering
+## Phase 1: bitECS scaffold + grid rendering
 
 **User stories**: 2, 3, 15, 16, 17, 21
 
 ### What to build
 
-Install phatty. Create `GameScene.ts` as a new file alongside `Game.ts` — it extends phatty's `Scene` and is registered in `main.ts` in place of `Game`. The scene creates a single world entity with two components:
+Install bitECS. Create `GameScene.ts` as a new file alongside `Game.ts` — it extends plain `Phaser.Scene` and is registered in `main.ts` in place of `Game`. The scene creates a bitECS world with a typed context (`{ scene, events }`), then creates a single world entity (`worldEid`).
 
-- `GridComponent`: generates the 200×200 tile array with 10% obstacle density in `create()`; exposes `isPassable(col, row)` and `randomPassableTile()`; owns `COLS`, `ROWS`, `TILE_SIZE`, and `OBSTACLE_DENSITY` constants; owns the `TileCoord`, `TileType`, and `Tile` types.
-- `GridRendererComponent`: draws every tile exactly once in `create()` using a single `Phaser.GameObjects.Graphics` object; never runs `update()`; implements `destroy()` to dispose the graphics object; requires `GridComponent` on the same entity.
+Two system files handle the grid:
 
-`GameScene.create()` emits the same `EventBus` events (`'current-scene-ready'`, `'navigate'`) as the current `Game.ts`, keeping the Vue layer unaware of the change. The camera is centered on the grid.
+- `GridSystem.ts`: `GridSystem.create(world, worldEid)` generates the 200×200 tile array with 10% obstacle density and writes it into `Grid[worldEid]`; exports `isPassable(worldEid, col, row)` and `randomPassableTile(worldEid)` as stable helper functions; owns `COLS`, `ROWS`, `TILE_SIZE`, `OBSTACLE_DENSITY`, and the `TileCoord`, `TileType`, and `Tile` types.
+- `GridRendererSystem.ts`: `GridRendererSystem.create(world, worldEid)` draws every tile exactly once using a single `Phaser.GameObjects.Graphics` object and stores it internally for later disposal; has no `update()`; `destroySystems(world)` disposes the graphics object.
 
-Grid test cases from `grid.spec.ts` are migrated to `GridComponent.spec.ts` and `GridRendererComponent.spec.ts`. `Grid` class, `grid.ts`, and `grid.spec.ts` are deleted.
+`GameScene.create()` emits the same `EventBus` events (`'current-scene-ready'`, `'navigate'`) as the current `Game.ts`. The camera is centered on the grid.
+
+Grid test cases from `grid.spec.ts` are migrated to `GridSystem.spec.ts` and `GridRendererSystem.spec.ts`. `grid.ts` and `grid.spec.ts` are deleted.
 
 ### Acceptance criteria
 
-- [ ] `phatty` appears in `package.json` dependencies
-- [ ] `GameScene.ts` exists and extends phatty `Scene`; `Game.ts` still exists but is no longer registered
+- [ ] `bitecs` appears in `package.json` dependencies
+- [ ] `GameScene.ts` exists and extends plain `Phaser.Scene`; `Game.ts` still exists but is no longer registered
 - [ ] Booting the app shows the 200×200 tile grid with passable and obstacle colours
-- [ ] `GridComponent.spec.ts` passes: tile generation, obstacle density, `isPassable()`, bounds checks, `getTile()`, `randomPassableTile()`
-- [ ] `GridRendererComponent.spec.ts` passes: `create()` produces draw calls for every tile type; `destroy()` disposes the graphics object
+- [ ] `GridSystem.spec.ts` passes: tile generation, obstacle density, `isPassable()`, bounds checks, `randomPassableTile()`
+- [ ] `GridRendererSystem.spec.ts` passes: `create()` produces `fillRect` draw calls for every tile type; `destroySystems()` disposes the graphics object
 - [ ] `grid.ts` and `grid.spec.ts` are deleted
 - [ ] No Lint/TypeScript errors; all existing non-grid tests still pass
 
@@ -47,21 +50,21 @@ Grid test cases from `grid.spec.ts` are migrated to `GridComponent.spec.ts` and 
 
 ### What to build
 
-Add three components to the project:
+Add three system files:
 
-- `PositionComponent`: holds `col`, `row`, `pixelX`, `pixelY`; initialized to a random passable tile.
-- `UnitRendererComponent`: creates a `Phaser.GameObjects.Graphics` object; `update()` clears and redraws a filled rectangle at `positionComponent.pixelX / pixelY`; priority `10`; requires `PositionComponent`; `destroy()` disposes the graphics object.
-- `UnitFactoryComponent`: added to the world entity; receives the `GridComponent` instance as a constructor argument; `create()` spawns 200 unit entities, each with `PositionComponent` (random passable starting tile) and `UnitRendererComponent`.
+- `PositionSystem.ts`: exports the `Position` SoA component (`col`, `row`, `pixelX`, `pixelY` arrays indexed by entity ID).
+- `UnitRendererSystem.ts`: on the first call to `UnitRendererSystem.update(world)`, generates a shared `'unit'` texture via a temporary `Graphics` object, then creates one `Phaser.GameObjects.Image` per unit entity and stores it in `UnitSprite[eid].sprite`; on every subsequent call repositions each `Image` using `Position.pixelX[eid]` / `Position.pixelY[eid]`; `destroySystems(world)` calls `sprite.destroy()` for each entity. No per-frame geometry rebuilding.
+- `UnitFactorySystem.ts`: `UnitFactorySystem.create(world, worldEid)` spawns 200 unit entities using `addEntity` + `addComponent`; picks a random passable starting tile per unit via `randomPassableTile(worldEid)` from `GridSystem`; writes initial `Position` values.
 
 200 coloured squares appear on the grid at their starting positions. They do not move yet.
 
-`UnitRendererComponent.spec.ts` is written fresh: asserts `update()` calls `fillRect` at the correct pixel coordinates; asserts `destroy()` disposes the graphics object.
+`UnitRendererSystem.spec.ts` is written fresh: first-call asserts `generateTexture('unit', ...)` is called, the temporary `Graphics` is destroyed, and `world.scene.add.image()` is called once per unit at the correct pixel coordinates; subsequent-call asserts `sprite.setPosition()` is called with updated coordinates; `destroySystems` asserts `sprite.destroy()` is called for each entity.
 
 ### Acceptance criteria
 
 - [ ] 200 unit squares are visible on the grid at boot
 - [ ] Each unit square is positioned at a passable tile
-- [ ] `UnitRendererComponent.spec.ts` passes: `update()` draws at `positionComponent.pixelX / pixelY`; `destroy()` disposes graphics
+- [ ] `UnitRendererSystem.spec.ts` passes: first-call initializes shared texture and `Image` objects; subsequent-call repositions each `Image`; `destroySystems` disposes all sprites
 - [ ] No Lint/TypeScript errors; all prior tests still pass
 
 ---
@@ -72,25 +75,25 @@ Add three components to the project:
 
 ### What to build
 
-Add three components to complete autonomous unit behaviour:
+Add three system files to complete autonomous unit behaviour:
 
-- `MovementComponent`: owns `speed` and the `TileCoord[]` path deque; `update()` advances `pixelX`/`pixelY` toward the next waypoint at `speed` tiles/second, snapping to tile centre on arrival; calls `PositionComponent` to update `col`/`row` on snap; emits a `'path-empty'` event when the deque empties; exposes `setPath(path)`; requires `PositionComponent`.
-- `PathfindingComponent`: owns the A\* algorithm and `MinHeap`; exposes `requestPath(col, row)` — runs A\* synchronously and calls `movementComponent.setPath(result)`; receives `GridComponent` as a constructor argument; requires `MovementComponent`.
-- `WanderingComponent`: in `create()`, resolves `MovementComponent` and `PathfindingComponent` from the entity and subscribes to `movementComponent.events.on('path-empty', ...)`; the handler picks a random passable tile via the held `GridComponent` reference and calls `pathfindingComponent.requestPath(col, row)`; receives `GridComponent` as a constructor argument; requires `MovementComponent` and `PathfindingComponent`.
+- `MovementSystem.ts`: exports the `Movement` SoA component (`speed`, `path` arrays); `MovementSystem.update(world, delta)` advances `Position.pixelX[eid]` / `Position.pixelY[eid]` toward the next waypoint each frame, snapping to tile centre on arrival and updating `Position.col[eid]` / `Position.row[eid]`; emits `world.events.emit('movement:path-empty', eid)` when a path deque empties.
+- `PathfindingSystem.ts`: exports `requestPath(world, eid, col, row)` — runs A\* synchronously against `Grid[worldEid]` and writes the result into `Movement.path[eid]`; owns the `MinHeap` implementation internally.
+- `WanderingSystem.ts`: `WanderingSystem.create(world)` calls `world.events.on('movement:path-empty', eid => ...)` — the handler calls `randomPassableTile(worldEid)` from `GridSystem` and then `requestPath(world, eid, col, row)` from `PathfindingSystem`; the new path is available within the same frame.
 
-`UnitFactoryComponent` is updated to attach `MovementComponent`, `PathfindingComponent`, and `WanderingComponent` to every unit entity and to issue an initial `requestPath()` call per unit so movement begins immediately on boot.
+`UnitFactorySystem.create` is updated to also attach `Movement`, `Pathfinding`, and `Wandering` components to each unit entity and call `requestPath` once per unit to seed the first path. `WanderingSystem.create(world)` is called in `GameScene.create()` before `UnitFactorySystem.create`.
 
-Once all components are in place and all tests pass, the old simulation layer is deleted: `Game.ts`, `world.ts`, `unit.ts`, `pathfinder.ts`, `world.spec.ts`, and `pathfinder.spec.ts`. A\* test cases from `pathfinder.spec.ts` are migrated to `PathfindingComponent.spec.ts`. Movement and wandering cases from `world.spec.ts` are migrated to `MovementComponent.spec.ts` and `WanderingComponent.spec.ts`.
+Once all systems are in place and all tests pass, the old simulation layer is deleted: `Game.ts`, `world.ts`, `unit.ts`, `pathfinder.ts`, `world.spec.ts`, and `pathfinder.spec.ts`. A\* test cases from `pathfinder.spec.ts` are migrated to `PathfindingSystem.spec.ts`. Movement and wandering cases from `world.spec.ts` are migrated to `MovementSystem.spec.ts` and `WanderingSystem.spec.ts`.
 
-Entity querying via `this.entities.query.with(PositionComponent).all()` is verified to return all 200 unit entities.
+Entity querying via `query(world, [Position, Movement])` is verified to return all 200 unit entities.
 
 ### Acceptance criteria
 
 - [ ] All 200 units wander the grid indefinitely without stopping
 - [ ] Units navigate around obstacles using A\*
-- [ ] `PathfindingComponent.spec.ts` passes: all A\* cases (diagonal, corner-cut, obstacles, unreachable)
-- [ ] `MovementComponent.spec.ts` passes: path advance, waypoint snap, `setPath()`, `'path-empty'` event emission
-- [ ] `WanderingComponent.spec.ts` passes: subscribes to `'path-empty'`, calls `requestPath()` with a passable tile
+- [ ] `PathfindingSystem.spec.ts` passes: all A\* cases (diagonal, corner-cut, obstacles, unreachable)
+- [ ] `MovementSystem.spec.ts` passes: path advance, waypoint snap, `'movement:path-empty'` event emission
+- [ ] `WanderingSystem.spec.ts` passes: subscribes to `'movement:path-empty'`, calls `requestPath` with a passable tile
 - [ ] `Game.ts`, `world.ts`, `unit.ts`, `pathfinder.ts`, `world.spec.ts`, `pathfinder.spec.ts` are all deleted
-- [ ] `this.entities.query.with(PositionComponent).all()` returns 200 entities
+- [ ] `query(world, [Position, Movement])` returns 200 entities
 - [ ] No Lint/TypeScript errors; full test suite passes
