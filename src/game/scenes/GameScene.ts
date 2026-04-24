@@ -4,6 +4,8 @@ import { Events, Scene } from 'phaser'
 import { EventBus } from '../EventBus'
 import * as GridRendererSystem from '../systems/GridRendererSystem'
 import * as GridSystem from '../systems/GridSystem'
+import * as UnitFactorySystem from '../systems/UnitFactorySystem'
+import * as UnitRendererSystem from '../systems/UnitRendererSystem'
 
 export class GameScene extends Scene {
   private world!: ReturnType<typeof createWorld<GameWorld>>
@@ -22,6 +24,7 @@ export class GameScene extends Scene {
     this.worldEid = addEntity(this.world)
     GridSystem.create(this.world, this.worldEid)
     GridRendererSystem.create(this.world, this.worldEid)
+    UnitFactorySystem.create(this.world, this.worldEid)
 
     const gridWidth = GridSystem.COLS * GridSystem.TILE_SIZE
     const gridHeight = GridSystem.ROWS * GridSystem.TILE_SIZE
@@ -29,6 +32,7 @@ export class GameScene extends Scene {
 
     this.events.once('shutdown', () => {
       GridRendererSystem.destroySystems(this.world)
+      UnitRendererSystem.destroySystems(this.world)
     })
 
     EventBus.emit('current-scene-ready', this)
@@ -36,7 +40,6 @@ export class GameScene extends Scene {
   }
 
   update(_time: number, _delta: number): void {
-    // Phase 2: MovementSystem.update(world, delta)
-    // Phase 2: UnitRendererSystem.update(world)
+    UnitRendererSystem.update(this.world)
   }
 }

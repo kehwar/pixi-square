@@ -41,7 +41,7 @@ Grid test cases from `grid.spec.ts` are migrated to `GridSystem.spec.ts` and `Gr
 - [x] Booting the app shows the 200×200 tile grid with passable and obstacle colours
 - [x] `GridSystem.spec.ts` passes: tile generation, obstacle density, `isPassable()`, bounds checks, `randomPassableTile()`
 - [x] `GridRendererSystem.spec.ts` passes: `create()` produces `fillRect` draw calls for every tile type; `destroySystems()` disposes the graphics object
-- [ ] ~~`grid.ts` and `grid.spec.ts` are deleted~~ — deferred to Phase 3 cleanup per user request
+- [ ] ~~`grid.ts` and `grid.spec.ts` are deleted~~ — deferred to Phase 3 cleanup
 - [x] No Lint/TypeScript errors; all existing non-grid tests still pass
 
 ### Notes
@@ -54,6 +54,8 @@ Grid test cases from `grid.spec.ts` are migrated to `GridSystem.spec.ts` and `Gr
 ---
 
 ## Phase 2: unit population + static rendering
+
+> ✅ Completed — `PositionSystem.ts`, `UnitFactorySystem.ts`, and `UnitRendererSystem.ts` created; 200 unit entities spawned on passable tiles; shared `'unit'` texture generated once via a temporary `Graphics` object; one `Image` per unit created on first `update()` call and repositioned on every subsequent call; `UnitRendererSystem.spec.ts` written with 10 passing tests; `GameScene.ts` updated to call `UnitFactorySystem.create` in `create()` and `UnitRendererSystem.update` in `update()`; all 95 tests pass.
 
 **User stories**: 4, 5, 6, 12, 13, 14, 18 (partial), 19
 
@@ -71,10 +73,17 @@ Add three system files:
 
 ### Acceptance criteria
 
-- [ ] 200 unit squares are visible on the grid at boot
-- [ ] Each unit square is positioned at a passable tile
-- [ ] `UnitRendererSystem.spec.ts` passes: first-call initializes shared texture and `Image` objects; subsequent-call repositions each `Image`; `destroySystems` disposes all sprites
-- [ ] No Lint/TypeScript errors; all prior tests still pass
+- [x] 200 unit squares are visible on the grid at boot
+- [x] Each unit square is positioned at a passable tile
+- [x] `UnitRendererSystem.spec.ts` passes: first-call initializes shared texture and `Image` objects; subsequent-call repositions each `Image`; `destroySystems` disposes all sprites
+- [x] No Lint/TypeScript errors; all prior tests still pass
+
+### Notes
+
+- `PositionSystem.ts` exports both the `Position` SoA component and an `addPositionComponent` helper that computes `pixelX`/`pixelY` from `col`/`row` using `TILE_SIZE`.
+- `UnitRendererSystem.ts` uses a module-level `unitEids: number[]` list populated on the first `update()` call (via `query(world, [Position])`); `destroySystems` and subsequent calls iterate this list rather than re-querying.
+- `UnitRendererSystem._reset()` is exposed for test isolation (resets `UnitSprite`, `unitEids`, and `initialized`).
+- `GameScene.update()` only calls `UnitRendererSystem.update(world)` at this phase; `MovementSystem.update(world, delta)` will be added in Phase 3.
 
 ---
 
