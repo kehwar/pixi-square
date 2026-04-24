@@ -4,8 +4,10 @@ import { Events, Scene } from 'phaser'
 import { EventBus } from '../EventBus'
 import * as GridRendererSystem from '../systems/GridRendererSystem'
 import * as GridSystem from '../systems/GridSystem'
+import * as MovementSystem from '../systems/MovementSystem'
 import * as UnitFactorySystem from '../systems/UnitFactorySystem'
 import * as UnitRendererSystem from '../systems/UnitRendererSystem'
+import * as WanderingSystem from '../systems/WanderingSystem'
 
 export class GameScene extends Scene {
   private world!: ReturnType<typeof createWorld<GameWorld>>
@@ -24,6 +26,7 @@ export class GameScene extends Scene {
     this.worldEid = addEntity(this.world)
     GridSystem.create(this.world, this.worldEid)
     GridRendererSystem.create(this.world, this.worldEid)
+    WanderingSystem.create(this.world, this.worldEid)
     UnitFactorySystem.create(this.world, this.worldEid)
 
     const gridWidth = GridSystem.COLS * GridSystem.TILE_SIZE
@@ -39,7 +42,8 @@ export class GameScene extends Scene {
     EventBus.emit('navigate', '/game')
   }
 
-  update(_time: number, _delta: number): void {
+  update(_time: number, delta: number): void {
+    MovementSystem.update(this.world, delta)
     UnitRendererSystem.update(this.world)
   }
 }

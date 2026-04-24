@@ -1,11 +1,22 @@
-export interface TileCoord {
-  readonly col: number
-  readonly row: number
-}
+import type { World } from 'bitecs'
+import type { GameWorld } from './types'
+import type { TileCoord } from './GridSystem'
+import { addComponent, query } from 'bitecs'
+import { Grid, isPassable } from './GridSystem'
+import { Movement } from './MovementSystem'
+import { Position } from './PositionSystem'
 
-interface Passable {
+// --- Component ---
+
+export const Pathfinding: object = {}
+
+// --- Internal types ---
+
+interface PassableGrid {
   isPassable: (col: number, row: number) => boolean
 }
+
+// --- Internal: A* ---
 
 const SQRT2 = Math.SQRT2
 
@@ -20,14 +31,12 @@ const DIRS: ReadonlyArray<{ readonly dc: number, readonly dr: number, readonly c
   { dc: -1, dr: -1, cost: SQRT2 }, // NW
 ]
 
-/** Octile distance heuristic for 8-directional A*. */
 function octile(c1: number, r1: number, c2: number, r2: number): number {
   const dx = Math.abs(c2 - c1)
   const dy = Math.abs(r2 - r1)
   return Math.min(dx, dy) * SQRT2 + Math.abs(dx - dy)
 }
 
-/** Compact integer key: row * STRIDE + col. STRIDE must be > max col value. */
 const STRIDE = 1024
 
 function tileKey(col: number, row: number): number {
@@ -97,33 +106,32 @@ class MinHeap {
  * destination (inclusive), or null if the destination is impassable or
  * unreachable. Returns an empty array when source equals destination.
  */
-export function findPath(
-  grid: Passable,
-  fromCol: number,
-  fromRow: number,
+function findPath(
+  grid: PassableGrid,
+  srcCol: number,
+  srcRow: number,
   toCol: number,
   toRow: number,
 ): TileCoord[] | null {
   if (!grid.isPassable(toCol, toRow))
     return null
-  if (fromCol === toCol && fromRow === toRow)
+  if (srcCol === toCol && srcRow === toRow)
     return []
 
-  const startKey = tileKey(fromCol, fromRow)
-  const endKey = tileKey(toCol, toRow)
-
-  const gScore = new Map<number, number>([[startKey, 0]])
-  const cameFrom = new Map<number, number>()
   const open = new MinHeap()
-  open.push(octile(fromCol, fromRow, toCol, toRow), startKey)
+  const gScore = new Map<number, number>()
+  const cameFrom = new Map<number, number>()
+
+  const startKey = tileKey(srcCol, srcRow)
+  gScore.set(startKey, 0)
+  open.push(octile(srcCol, srcRow, toCol, toRow), startKey)
 
   while (open.size > 0) {
     const currentKey = open.pop()!
     const currentCol = currentKey % STRIDE
     const currentRow = Math.floor(currentKey / STRIDE)
 
-    if (currentKey === endKey) {
-      // Reconstruct path (excludes source, includes destination)
+    if (currentCol === toCol && currentRow === toRow) {
       const path: TileCoord[] = []
       let k = currentKey
       while (k !== startKey) {
@@ -159,4 +167,39 @@ export function findPath(
   }
 
   return null // destination unreachable
+}
+
+// --- System functions ---
+
+export function requestPath(world: World<GameWorld>, eid: number, col: number, row: number): void {
+  const [worldEid] = query(world, [Grid])
+  if (worldEid === undefined)
+    return
+
+  const grid: PassableGrid = {
+    isPassable: (c, r) => isPassable(worldEid, c, r),
+  }
+
+  const srcCol = Position.col[eid]!
+  const srcRow = Position.row[eid]!
+  const path = findPath(grid, srcCol, srcRow, col, row)
+  if (path !== null) {
+    Movement.path[eid] = path
+  }
+}
+
+// Exposed for testing
+export function _findPath(
+  grid: PassableGrid,
+  srcCol: number,
+  srcRow: number,
+  toCol: number,
+  toRow: number,
+): TileCoord[] | null {
+  return findPath(grid, srcCol, srcRow, toCol, toRow)
+}
+
+// Exposed for testing — suppress unused-component warning
+export function _addPathfindingComponent(world: World<GameWorld>, eid: number): void {
+  addComponent(world, eid, Pathfinding)
 }

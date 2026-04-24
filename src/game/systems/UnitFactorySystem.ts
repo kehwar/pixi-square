@@ -1,8 +1,11 @@
 import type { World } from 'bitecs'
 import type { GameWorld } from './types'
-import { addEntity } from 'bitecs'
+import { addComponent, addEntity } from 'bitecs'
 import { randomPassableTile } from './GridSystem'
+import { addMovementComponent } from './MovementSystem'
+import { Pathfinding, requestPath } from './PathfindingSystem'
 import { addPositionComponent } from './PositionSystem'
+import { Wandering } from './WanderingSystem'
 
 // --- Constants ---
 
@@ -15,5 +18,10 @@ export function create(world: World<GameWorld>, worldEid: number): void {
     const eid = addEntity(world)
     const { col, row } = randomPassableTile(worldEid)
     addPositionComponent(world, eid, col, row)
+    addMovementComponent(world, eid)
+    addComponent(world, eid, Pathfinding)
+    addComponent(world, eid, Wandering)
+    const { col: destCol, row: destRow } = randomPassableTile(worldEid)
+    requestPath(world, eid, destCol, destRow)
   }
 }
