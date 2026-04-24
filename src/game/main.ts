@@ -1,8 +1,8 @@
 import { AUTO, Game, Scale } from 'phaser'
 
 import { Boot } from './scenes/Boot'
-import { Game as GameScene } from './scenes/Game'
 import { GameOver } from './scenes/GameOver'
+import { GameScene } from './scenes/GameScene'
 import { MainMenu } from './scenes/MainMenu'
 import { Preloader } from './scenes/Preloader'
 

@@ -16,8 +16,8 @@ Both libraries were read at the source level. The core distinction is in how ent
 
 ```ts
 const Position = { x: new Float32Array(1e5), y: new Float32Array(1e5) }
-const eid = addEntity(world)   // eid = 4, a plain number
-Position.x[eid] = 10           // direct array write, no object allocation
+const eid = addEntity(world) // eid = 4, a plain number
+Position.x[eid] = 10 // direct array write, no object allocation
 ```
 
 **phatty** uses class instances for both entities and components, stored in a per-entity `Map`:

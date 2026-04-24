@@ -17,6 +17,8 @@
 
 ## Phase 1: bitECS scaffold + grid rendering
 
+> ✅ Completed — bitECS installed; `GameScene.ts` created with world + grid wiring; `GridSystem.ts` and `GridRendererSystem.ts` implemented; spec files written; `main.ts` updated to register `GameScene`; `grid.ts` and `grid.spec.ts` preserved for Phase 3 cleanup.
+
 **User stories**: 2, 3, 15, 16, 17, 21
 
 ### What to build
@@ -34,13 +36,20 @@ Grid test cases from `grid.spec.ts` are migrated to `GridSystem.spec.ts` and `Gr
 
 ### Acceptance criteria
 
-- [ ] `bitecs` appears in `package.json` dependencies
-- [ ] `GameScene.ts` exists and extends plain `Phaser.Scene`; `Game.ts` still exists but is no longer registered
-- [ ] Booting the app shows the 200×200 tile grid with passable and obstacle colours
-- [ ] `GridSystem.spec.ts` passes: tile generation, obstacle density, `isPassable()`, bounds checks, `randomPassableTile()`
-- [ ] `GridRendererSystem.spec.ts` passes: `create()` produces `fillRect` draw calls for every tile type; `destroySystems()` disposes the graphics object
-- [ ] `grid.ts` and `grid.spec.ts` are deleted
-- [ ] No Lint/TypeScript errors; all existing non-grid tests still pass
+- [x] `bitecs` appears in `package.json` dependencies
+- [x] `GameScene.ts` exists and extends plain `Phaser.Scene`; `Game.ts` still exists but is no longer registered
+- [x] Booting the app shows the 200×200 tile grid with passable and obstacle colours
+- [x] `GridSystem.spec.ts` passes: tile generation, obstacle density, `isPassable()`, bounds checks, `randomPassableTile()`
+- [x] `GridRendererSystem.spec.ts` passes: `create()` produces `fillRect` draw calls for every tile type; `destroySystems()` disposes the graphics object
+- [ ] ~~`grid.ts` and `grid.spec.ts` are deleted~~ — deferred to Phase 3 cleanup per user request
+- [x] No Lint/TypeScript errors; all existing non-grid tests still pass
+
+### Notes
+
+- `grid.ts` and `grid.spec.ts` were **not** deleted in this phase — they remain alongside the new `GridSystem.ts` and will be removed in Phase 3 along with the other old simulation files.
+- `GridSystem.ts` uses plain JS arrays (`Grid: GridData[]`) rather than bitECS typed arrays because tiles are arbitrary objects (`{ type }`) not numeric SoA. `addComponent` is called to register the entity, but the data is stored directly in the array.
+- `GridRendererSystem.ts` exposes `_getGraphics()` and `_reset()` helpers (prefixed `_`) for test access — not part of the public API.
+- `GameScene.ts` registers a `shutdown` event listener (not `destroy`) to call `destroySystems` — this matches Phaser 4's scene lifecycle.
 
 ---
 

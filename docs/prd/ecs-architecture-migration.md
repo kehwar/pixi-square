@@ -46,7 +46,7 @@ Install **bitECS** (`npm install bitecs`). `GameScene` extends plain `Phaser.Sce
 The bitECS world is created with a typed context object:
 
 ```ts
-type GameWorld = {
+interface GameWorld {
   scene: Phaser.Scene
   events: Phaser.Events.EventEmitter
 }
