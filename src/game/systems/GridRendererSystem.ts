@@ -16,6 +16,8 @@ export function create(world: World<GameWorld>, worldEid: number): void {
   const gfx = world.scene.add.graphics()
   graphics = gfx
 
+  const gridData = Grid[worldEid]!
+
   // Background (border color)
   gfx.fillStyle(TILE_COLORS.border, 1)
   gfx.fillRect(0, 0, COLS * ts, ROWS * ts)
@@ -24,7 +26,7 @@ export function create(world: World<GameWorld>, worldEid: number): void {
   gfx.fillStyle(TILE_COLORS.passable, 1)
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
-      if (isPassable(worldEid, col, row))
+      if (isPassable(gridData, col, row))
         gfx.fillRect(col * ts + 1, row * ts + 1, ts - 2, ts - 2)
     }
   }
@@ -33,7 +35,7 @@ export function create(world: World<GameWorld>, worldEid: number): void {
   gfx.fillStyle(TILE_COLORS.obstacle, 1)
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
-      if (!isPassable(worldEid, col, row))
+      if (!isPassable(gridData, col, row))
         gfx.fillRect(col * ts + 1, row * ts + 1, ts - 2, ts - 2)
     }
   }

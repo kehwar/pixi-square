@@ -1,14 +1,12 @@
-import type { GridData } from '../GridSystem'
+import type { GridData } from '../../systems/GridSystem'
+import type { MovementStore, PositionStore } from '../pathfinding'
 import { describe, expect, it } from 'vitest'
-import { findPath, requestPath } from '../../../game/utils/pathfinding'
-import * as GridSystem from '../GridSystem'
-import { Movement } from '../MovementSystem'
-import { Position } from '../PositionSystem'
+import { findPath, requestPath } from '../pathfinding'
 
 // --- Helpers ---
 
-/** Build a grid from a 2D boolean array: true = passable, false = obstacle. */
-function makeGrid(rows: boolean[][]): { isPassable: (col: number, row: number) => boolean } {
+/** Build a PassableGrid-compatible object from a 2D boolean array. */
+function makePassableGrid(rows: boolean[][]): { isPassable: (col: number, row: number) => boolean } {
   return {
     isPassable(col: number, row: number): boolean {
       if (row < 0 || row >= rows.length)
@@ -35,7 +33,7 @@ function makeGridData(rows: boolean[][]): GridData {
 // . . . . .
 const T = true
 const F = false
-const grid5x5 = makeGrid([
+const grid5x5 = makePassableGrid([
   [T, T, T, T, T],
   [T, F, T, T, T],
   [T, T, T, T, T],
@@ -51,9 +49,9 @@ const gridData5x5 = makeGridData([
   [T, T, T, T, T],
 ])
 
-// --- A* tests (migrated from pathfinder.spec.ts) ---
+// --- findPath tests ---
 
-describe('pathfindingSystem._findPath', () => {
+describe('pathfinding.findPath', () => {
   it('returns a non-null path between two passable tiles', () => {
     const path = findPath(grid5x5, 0, 0, 4, 4)
     expect(path).not.toBeNull()
@@ -91,7 +89,7 @@ describe('pathfindingSystem._findPath', () => {
   })
 
   it('uses diagonal moves when they shorten the path', () => {
-    const simpleDiag = makeGrid([
+    const simpleDiag = makePassableGrid([
       [T, T, T],
       [T, T, T],
       [T, T, T],
@@ -104,7 +102,7 @@ describe('pathfindingSystem._findPath', () => {
   })
 
   it('returns null when destination is completely surrounded by obstacles', () => {
-    const isolated = makeGrid([
+    const isolated = makePassableGrid([
       [T, T, T, T, T],
       [T, F, F, F, T],
       [T, F, T, F, T],
@@ -116,7 +114,7 @@ describe('pathfindingSystem._findPath', () => {
   })
 
   it('routes around an obstacle in the direct path', () => {
-    const blockedMid = makeGrid([
+    const blockedMid = makePassableGrid([
       [T, T, T],
       [F, F, T],
       [T, T, T],
@@ -130,7 +128,7 @@ describe('pathfindingSystem._findPath', () => {
   })
 
   it('does not cut corners through obstacle tiles diagonally', () => {
-    const cornerGrid = makeGrid([
+    const cornerGrid = makePassableGrid([
       [T, F],
       [F, T],
     ])
@@ -139,7 +137,7 @@ describe('pathfindingSystem._findPath', () => {
   })
 
   it('allows diagonal when neither cardinal neighbour is an obstacle', () => {
-    const open3x3 = makeGrid([
+    const open3x3 = makePassableGrid([
       [T, T, T],
       [T, T, T],
       [T, T, T],
@@ -150,39 +148,50 @@ describe('pathfindingSystem._findPath', () => {
   })
 })
 
-// --- requestPath integration tests ---
+// --- requestPath tests ---
 
-describe('pathfindingSystem.requestPath', () => {
-  function makePassableGridData(): GridData {
-    const tiles: GridSystem.Tile[][] = Array.from({ length: GridSystem.ROWS }, () =>
-      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })))
-    return { tiles }
-  }
-
-  function seedStores(eid: number, col: number, row: number): void {
-    Position.col[eid] = col
-    Position.row[eid] = row
-    Movement.path[eid] = []
+describe('pathfinding.requestPath', () => {
+  function makeStores(eid: number, col: number, row: number): {
+    positionData: PositionStore
+    movementData: MovementStore
+  } {
+    const positionData: PositionStore = { col: [], row: [] }
+    positionData.col[eid] = col
+    positionData.row[eid] = row
+    const movementData: MovementStore = { path: [] }
+    movementData.path[eid] = []
+    return { positionData, movementData }
   }
 
   it('writes a non-empty path for a reachable destination', () => {
-    const eid = 50
-    const gridData = makePassableGridData()
-    seedStores(eid, 0, 0)
-    requestPath(gridData, Movement, Position, eid, 5, 5)
-    expect(Movement.path[eid]!.length).toBeGreaterThan(0)
-    expect(Movement.path[eid]!.at(-1)).toEqual({ col: 5, row: 5 })
+    const eid = 1
+    const { positionData, movementData } = makeStores(eid, 0, 0)
+    requestPath(gridData5x5, movementData, positionData, eid, 4, 4)
+    expect(movementData.path[eid]!.length).toBeGreaterThan(0)
+    expect(movementData.path[eid]!.at(-1)).toEqual({ col: 4, row: 4 })
   })
 
   it('does not update path when destination is an obstacle', () => {
-    const eid = 51
-    const tiles: GridSystem.Tile[][] = Array.from({ length: GridSystem.ROWS }, () =>
-      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })))
-    tiles[3]![3] = { type: 'obstacle' }
-    const gridData: GridData = { tiles }
-    seedStores(eid, 0, 0)
+    const eid = 1
+    const { positionData, movementData } = makeStores(eid, 0, 0)
+    requestPath(gridData5x5, movementData, positionData, eid, 1, 1) // obstacle
+    expect(movementData.path[eid]!.length).toBe(0)
+  })
 
-    requestPath(gridData, Movement, Position, eid, 3, 3) // obstacle destination
-    expect(Movement.path[eid]!.length).toBe(0) // path stays empty
+  it('writes an empty path when source equals destination', () => {
+    const eid = 1
+    const { positionData, movementData } = makeStores(eid, 2, 2)
+    movementData.path[eid] = [{ col: 0, row: 0 }] // pre-existing path
+    requestPath(gridData5x5, movementData, positionData, eid, 2, 2)
+    expect(movementData.path[eid]).toEqual([])
+  })
+
+  it('path ends at the requested destination', () => {
+    const eid = 2
+    const { positionData, movementData } = makeStores(eid, 0, 2)
+    requestPath(gridData5x5, movementData, positionData, eid, 4, 2)
+    const path = movementData.path[eid]!
+    expect(path.length).toBeGreaterThan(0)
+    expect(path.at(-1)).toEqual({ col: 4, row: 2 })
   })
 })

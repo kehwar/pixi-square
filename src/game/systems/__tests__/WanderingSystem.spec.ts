@@ -1,14 +1,14 @@
 import type { GameWorld, GameWorldContext } from '../types'
 import { addEntity, createWorld } from 'bitecs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as pathfinding from '../../../game/utils/pathfinding'
 import * as GridSystem from '../GridSystem'
-import { addMovementComponent } from '../MovementSystem'
-import * as PathfindingSystem from '../PathfindingSystem'
-import { addPositionComponent } from '../PositionSystem'
+import { addMovementComponent, Movement } from '../MovementSystem'
+import { addPositionComponent, Position } from '../PositionSystem'
 import { create } from '../WanderingSystem'
 
-vi.mock('../PathfindingSystem', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('../PathfindingSystem')>()
+vi.mock('../../../game/utils/pathfinding', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../../game/utils/pathfinding')>()
   return {
     ...mod,
     requestPath: vi.fn(),
@@ -61,7 +61,7 @@ function makeWorldWithGrid(): {
 
 describe('wanderingSystem.create', () => {
   beforeEach(() => {
-    vi.mocked(PathfindingSystem.requestPath).mockClear()
+    vi.mocked(pathfinding.requestPath).mockClear()
   })
 
   it('subscribes to movement:path-empty on the world events', () => {
@@ -82,8 +82,15 @@ describe('wanderingSystem.create', () => {
     addMovementComponent(world, eid)
 
     events.emit('movement:path-empty', eid)
-    expect(PathfindingSystem.requestPath).toHaveBeenCalledOnce()
-    expect(PathfindingSystem.requestPath).toHaveBeenCalledWith(world, eid, expect.any(Number), expect.any(Number))
+    expect(pathfinding.requestPath).toHaveBeenCalledOnce()
+    expect(pathfinding.requestPath).toHaveBeenCalledWith(
+      GridSystem.Grid[worldEid]!,
+      Movement,
+      Position,
+      eid,
+      expect.any(Number),
+      expect.any(Number),
+    )
   })
 
   it('calls requestPath with a passable destination tile', () => {
@@ -95,8 +102,8 @@ describe('wanderingSystem.create', () => {
     addMovementComponent(world, eid)
 
     events.emit('movement:path-empty', eid)
-    const [, , destCol, destRow] = vi.mocked(PathfindingSystem.requestPath).mock.calls[0]!
-    expect(GridSystem.isPassable(worldEid, destCol!, destRow!)).toBe(true)
+    const [, , , , destCol, destRow] = vi.mocked(pathfinding.requestPath).mock.calls[0]!
+    expect(GridSystem.isPassable(GridSystem.Grid[worldEid]!, destCol!, destRow!)).toBe(true)
   })
 
   it('calls requestPath each time movement:path-empty fires', () => {
@@ -110,6 +117,6 @@ describe('wanderingSystem.create', () => {
     events.emit('movement:path-empty', eid)
     events.emit('movement:path-empty', eid)
     events.emit('movement:path-empty', eid)
-    expect(PathfindingSystem.requestPath).toHaveBeenCalledTimes(3)
+    expect(pathfinding.requestPath).toHaveBeenCalledTimes(3)
   })
 })

@@ -46,19 +46,19 @@ export function create(world: World<GameWorld>, worldEid: number): void {
   Grid[worldEid] = { tiles: rows }
 }
 
-export function isPassable(worldEid: number, col: number, row: number): boolean {
+export function isPassable(gridData: GridData, col: number, row: number): boolean {
   if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {
     return false
   }
-  return Grid[worldEid]!.tiles[row]![col]!.type === 'passable'
+  return gridData.tiles[row]![col]!.type === 'passable'
 }
 
-export function randomPassableTile(worldEid: number): TileCoord {
+export function randomPassableTile(gridData: GridData): TileCoord {
   let col: number
   let row: number
   do {
     col = Math.floor(Math.random() * COLS)
     row = Math.floor(Math.random() * ROWS)
-  } while (!isPassable(worldEid, col, row))
+  } while (!isPassable(gridData, col, row))
   return { col, row }
 }

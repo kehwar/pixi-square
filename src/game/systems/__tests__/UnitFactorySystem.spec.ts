@@ -36,8 +36,9 @@ describe('unitFactorySystem', () => {
     const { world, worldEid } = makeWorld()
     UnitFactorySystem.create(world, worldEid)
     const entities = Array.from(query(world, [Position, Movement]))
+    const gridData = GridSystem.Grid[worldEid]!
     for (const eid of entities) {
-      expect(GridSystem.isPassable(worldEid, Position.col[eid]!, Position.row[eid]!)).toBe(true)
+      expect(GridSystem.isPassable(gridData, Position.col[eid]!, Position.row[eid]!)).toBe(true)
     }
   })
 

@@ -49,6 +49,8 @@ Introduce the `ComponentSystem<TData>` abstract base class and the `createWorld(
 
 ## Phase 2: Utility extraction
 
+> ✅ Completed — A\*, `MinHeap`, `findPath`, and `requestPath` extracted to `src/game/utils/pathfinding.ts`. `isPassable` and `randomPassableTile` updated to accept `GridData` directly. `PathfindingSystem` is now a no-op `ComponentSystem<object>` marker class. All call sites in `GridRendererSystem`, `WanderingSystem`, and `UnitFactorySystem` updated. All existing A\* tests migrated to import from `utils/pathfinding`. New `utils/pathfinding.spec.ts` added (15 tests). 92/92 suite green; no lint or TypeScript errors.
+
 **User stories**: 16, 17, 18, 19
 
 ### What to build
@@ -57,14 +59,22 @@ Extract the A\* algorithm, `MinHeap`, `findPath`, and `requestPath` from `Pathfi
 
 ### Acceptance criteria
 
-- [ ] `utils/pathfinding.ts` exports `findPath` and `requestPath(gridData, movementData, positionData, eid, col, row)` as plain functions with no ECS imports
-- [ ] `isPassable(gridData, col, row)` and `randomPassableTile(gridData)` accept a `GridData` object; no `worldEid` parameter
-- [ ] All call sites in `GridRendererSystem`, `WanderingSystem`, `UnitFactorySystem`, and their specs updated to pass data objects
-- [ ] `PathfindingSystem` extends `ComponentSystem<object>`, registers no data store, all hooks are no-ops
-- [ ] `PathfindingSystem.spec.ts` imports `findPath` / `requestPath` from `utils/pathfinding.ts`
-- [ ] All existing A\* test cases pass without behavioural change
-- [ ] `utils/pathfinding` has its own unit tests asserting correct routes and correct path writes into movement data
-- [ ] No Lint/TypeScript errors
+- [x] `utils/pathfinding.ts` exports `findPath` and `requestPath(gridData, movementData, positionData, eid, col, row)` as plain functions with no ECS imports
+- [x] `isPassable(gridData, col, row)` and `randomPassableTile(gridData)` accept a `GridData` object; no `worldEid` parameter
+- [x] All call sites in `GridRendererSystem`, `WanderingSystem`, `UnitFactorySystem`, and their specs updated to pass data objects
+- [x] `PathfindingSystem` extends `ComponentSystem<object>`, registers no data store, all hooks are no-ops
+- [x] `PathfindingSystem.spec.ts` imports `findPath` / `requestPath` from `utils/pathfinding.ts`
+- [x] All existing A\* test cases pass without behavioural change
+- [x] `utils/pathfinding` has its own unit tests asserting correct routes and correct path writes into movement data
+- [x] No Lint/TypeScript errors
+
+### Notes
+
+- `requestPath` in `utils/pathfinding.ts` derives the grid's bounds (`rows`, `cols`) from `gridData.tiles.length` and `gridData.tiles[0].length` rather than the global `COLS`/`ROWS` constants from `GridSystem`, so it works correctly with any-sized grid in tests without the `GridSystem` import.
+- `PathfindingSystem` exports `Pathfinding = PathfindingSystem` as a legacy alias so existing call sites (`addComponent(world, eid, Pathfinding)`) compile unchanged.
+- `WanderingSystem` now imports `requestPath` from `../utils/pathfinding` and passes `Grid[worldEid]!`, `Movement`, and `Position` as data stores directly.
+- `UnitFactorySystem` likewise imports `requestPath` from `../utils/pathfinding`.
+- `PathfindingSystem.spec.ts` integration tests seed `Position` and `Movement` data arrays directly (no `addPositionComponent` / `addMovementComponent` with a fake world) since `requestPath` now operates on plain data stores.
 
 ---
 
