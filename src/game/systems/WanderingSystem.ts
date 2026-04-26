@@ -1,10 +1,9 @@
-import type { GameWorld } from './types'
-import { query } from 'bitecs'
+import type { GameWorld } from './World'
 import { requestPath } from '../utils/pathfinding'
 import { ComponentSystem } from './ComponentSystem'
-import { Grid, GridSystem, randomPassableTile } from './GridSystem'
-import { Movement } from './MovementSystem'
-import { Position } from './PositionSystem'
+import { GridSystem, randomPassableTile } from './GridSystem'
+import { MovementSystem } from './MovementSystem'
+import { PositionSystem } from './PositionSystem'
 
 // --- System class ---
 
@@ -13,12 +12,14 @@ export class WanderingSystem extends ComponentSystem<object> {
 
   override install(world: GameWorld): void {
     this._onPathEmpty = (eid: number) => {
-      const [gridEid] = query(world, [GridSystem])
+      const [gridEid] = world.query([GridSystem])
       if (gridEid === undefined)
         return
-      const gridData = Grid[gridEid]!
+      const gridData = world.getComponent(GridSystem, gridEid)
+      const movStorage = world.getComponentStorage(MovementSystem)
+      const posStorage = world.getComponentStorage(PositionSystem)
       const { col, row } = randomPassableTile(gridData)
-      requestPath(gridData, Movement, Position, eid, col, row)
+      requestPath(gridData, movStorage, posStorage, eid, col, row)
     }
     world.events.on('movement:path-empty', this._onPathEmpty)
   }
@@ -31,12 +32,14 @@ export class WanderingSystem extends ComponentSystem<object> {
   }
 
   override create(world: GameWorld, eid: number): void {
-    const [gridEid] = query(world, [GridSystem])
+    const [gridEid] = world.query([GridSystem])
     if (gridEid === undefined)
       return
-    const gridData = Grid[gridEid]!
+    const gridData = world.getComponent(GridSystem, gridEid)
+    const movStorage = world.getComponentStorage(MovementSystem)
+    const posStorage = world.getComponentStorage(PositionSystem)
     const { col, row } = randomPassableTile(gridData)
-    requestPath(gridData, Movement, Position, eid, col, row)
+    requestPath(gridData, movStorage, posStorage, eid, col, row)
   }
 }
 

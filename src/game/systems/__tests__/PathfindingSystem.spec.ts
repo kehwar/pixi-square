@@ -2,8 +2,6 @@ import type { GridData } from '../GridSystem'
 import { describe, expect, it } from 'vitest'
 import { findPath, requestPath } from '../../../game/utils/pathfinding'
 import * as GridSystem from '../GridSystem'
-import { Movement } from '../MovementSystem'
-import { Position } from '../PositionSystem'
 
 // --- Helpers ---
 
@@ -159,19 +157,25 @@ describe('pathfindingSystem.requestPath', () => {
     return { tiles }
   }
 
-  function seedStores(eid: number, col: number, row: number): void {
-    Position.col[eid] = col
-    Position.row[eid] = row
-    Movement.path[eid] = []
+  function seedStores(eid: number, col: number, row: number): {
+    movStore: { path: { col: number, row: number }[][] }
+    posStore: { col: number[], row: number[] }
+  } {
+    const movStore = { path: [] as { col: number, row: number }[][] }
+    const posStore = { col: [] as number[], row: [] as number[] }
+    movStore.path[eid] = []
+    posStore.col[eid] = col
+    posStore.row[eid] = row
+    return { movStore, posStore }
   }
 
   it('writes a non-empty path for a reachable destination', () => {
     const eid = 50
     const gridData = makePassableGridData()
-    seedStores(eid, 0, 0)
-    requestPath(gridData, Movement, Position, eid, 5, 5)
-    expect(Movement.path[eid]!.length).toBeGreaterThan(0)
-    expect(Movement.path[eid]!.at(-1)).toEqual({ col: 5, row: 5 })
+    const { movStore, posStore } = seedStores(eid, 0, 0)
+    requestPath(gridData, movStore, posStore, eid, 5, 5)
+    expect(movStore.path[eid]!.length).toBeGreaterThan(0)
+    expect(movStore.path[eid]!.at(-1)).toEqual({ col: 5, row: 5 })
   })
 
   it('does not update path when destination is an obstacle', () => {
@@ -180,9 +184,9 @@ describe('pathfindingSystem.requestPath', () => {
       Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })))
     tiles[3]![3] = { type: 'obstacle' }
     const gridData: GridData = { tiles }
-    seedStores(eid, 0, 0)
+    const { movStore, posStore } = seedStores(eid, 0, 0)
 
-    requestPath(gridData, Movement, Position, eid, 3, 3) // obstacle destination
-    expect(Movement.path[eid]!.length).toBe(0) // path stays empty
+    requestPath(gridData, movStore, posStore, eid, 3, 3) // obstacle destination
+    expect(movStore.path[eid]!.length).toBe(0) // path stays empty
   })
 })

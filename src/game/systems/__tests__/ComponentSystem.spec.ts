@@ -1,8 +1,7 @@
-import { addEntity } from 'bitecs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ComponentSystem } from '../ComponentSystem'
-import { createWorld } from '../types'
+import { createWorld } from '../World'
 
 vi.mock('phaser', () => {
   class EventEmitter {}
@@ -33,6 +32,7 @@ describe('componentSystem', () => {
       expect(world.systems).toBeInstanceOf(Map)
       expect(typeof world.installSystem).toBe('function')
       expect(typeof world.setupComponentStorage).toBe('function')
+      expect(typeof world.addComponent).toBe('function')
     })
   })
 
@@ -75,16 +75,15 @@ describe('componentSystem', () => {
   })
 
   describe('observe / create auto-fire', () => {
-    it('fires system.create when addComponent is called with the system class', async () => {
+    it('fires system.create when addComponent is called with the system class', () => {
       const world = createWorld(fakeScene)
       const system = new FakeSystem()
       const createSpy = vi.spyOn(system, 'create')
       world.installSystem(system)
 
-      const eid = addEntity(world)
-      // addComponent is the bitECS mechanism; observe hooks fire synchronously on add
-      const { addComponent } = await import('bitecs')
-      addComponent(world, eid, FakeSystem)
+      const eid = world.addEntity()
+      // observe hooks fire synchronously on add
+      world.addComponent(FakeSystem, eid)
 
       expect(createSpy).toHaveBeenCalledTimes(1)
       expect(createSpy).toHaveBeenCalledWith(world, eid)

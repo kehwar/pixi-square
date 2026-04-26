@@ -1,4 +1,4 @@
-import type { GameWorld } from './types'
+import type { GameWorld } from './World'
 import { ComponentSystem } from './ComponentSystem'
 
 // --- Constants ---
@@ -27,15 +27,12 @@ export interface GridData {
   tiles: Tile[][]
 }
 
-// --- Data store ---
-
-export const Grid: GridData[] = []
-
 // --- System class ---
 
 export class GridSystem extends ComponentSystem<GridData> {
   override install(world: GameWorld): void {
-    world.setupComponentStorage(GridSystem, Grid)
+    const grid: GridData[] = []
+    world.setupComponentStorage(GridSystem, grid)
   }
 
   override create(world: GameWorld, eid: number): void {

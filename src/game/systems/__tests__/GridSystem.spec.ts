@@ -1,7 +1,6 @@
-import { addComponent, addEntity } from 'bitecs'
 import { describe, expect, it, vi } from 'vitest'
 import { COLS, GridSystem, isPassable, OBSTACLE_DENSITY, randomPassableTile, ROWS } from '../GridSystem'
-import { createWorld } from '../types'
+import { createWorld } from '../World'
 
 vi.mock('phaser', () => {
   class EventEmitter {}
@@ -14,8 +13,8 @@ function makeWorld(): { world: ReturnType<typeof createWorld>, eid: number, grid
   const world = createWorld(fakeScene)
   const gridSystem = new GridSystem()
   world.installSystem(gridSystem)
-  const eid = addEntity(world)
-  addComponent(world, eid, GridSystem)
+  const eid = world.addEntity()
+  world.addComponent(GridSystem, eid)
   return { world, eid, gridSystem }
 }
 

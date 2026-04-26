@@ -1,5 +1,4 @@
-import type { GameWorld } from './types'
-import { addComponent } from 'bitecs'
+import type { GameWorld } from './World'
 import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
 
@@ -12,20 +11,21 @@ export interface PositionData {
   pixelY: number
 }
 
-// --- SoA storage ---
+// --- SoA storage type ---
 
-export const Position = {
-  col: [] as number[],
-  row: [] as number[],
-  pixelX: [] as number[],
-  pixelY: [] as number[],
+export interface PositionStorage {
+  col: number[]
+  row: number[]
+  pixelX: number[]
+  pixelY: number[]
 }
 
 // --- System class ---
 
-export class PositionSystem extends ComponentSystem<PositionData, typeof Position> {
+export class PositionSystem extends ComponentSystem<PositionData, PositionStorage> {
   override install(world: GameWorld): void {
-    world.setupComponentStorage(PositionSystem, Position)
+    const storage: PositionStorage = { col: [], row: [], pixelX: [], pixelY: [] }
+    world.setupComponentStorage(PositionSystem, storage)
   }
 
   override create(world: GameWorld, eid: number): void {
@@ -45,20 +45,18 @@ export class PositionSystem extends ComponentSystem<PositionData, typeof Positio
       pixelY: s.pixelY[eid]!,
     }
   }
-}
 
-// --- Call-site helper ---
+  setPosition(world: GameWorld, eid: number, col: number, row: number): void {
+    const s = this.getComponentStorage(world)
+    s.col[eid] = col
+    s.row[eid] = row
+    s.pixelX[eid] = col * TILE_SIZE + TILE_SIZE / 2
+    s.pixelY[eid] = row * TILE_SIZE + TILE_SIZE / 2
+  }
 
-export function addPositionComponent(
-  world: GameWorld,
-  eid: number,
-  col: number,
-  row: number,
-): void {
-  addComponent(world, eid, PositionSystem)
-  // Override zero-defaults from create:
-  Position.col[eid] = col
-  Position.row[eid] = row
-  Position.pixelX[eid] = col * TILE_SIZE + TILE_SIZE / 2
-  Position.pixelY[eid] = row * TILE_SIZE + TILE_SIZE / 2
+  setPixelPosition(world: GameWorld, eid: number, pixelX: number, pixelY: number): void {
+    const s = this.getComponentStorage(world)
+    s.pixelX[eid] = pixelX
+    s.pixelY[eid] = pixelY
+  }
 }

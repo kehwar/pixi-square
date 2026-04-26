@@ -1,8 +1,7 @@
-import { addComponent, addEntity } from 'bitecs'
 import { describe, expect, it, vi } from 'vitest'
 import { COLS, GridRendererSystem, ROWS, TILE_SIZE } from '../GridRendererSystem'
 import { GridSystem } from '../GridSystem'
-import { createWorld } from '../types'
+import { createWorld } from '../World'
 
 // Mock Phaser before importing modules that depend on it
 vi.mock('phaser', () => {
@@ -38,22 +37,22 @@ function makeWorld(): { world: ReturnType<typeof createWorld>, eid: number, grid
   world.installSystem(new GridSystem())
   const gridRendererSystem = new GridRendererSystem()
   world.installSystem(gridRendererSystem)
-  const eid = addEntity(world)
+  const eid = world.addEntity()
   // Add GridSystem component first so Grid[eid] is populated before GridRendererSystem.create fires
-  addComponent(world, eid, GridSystem)
+  world.addComponent(GridSystem, eid)
   return { world, eid, gridRendererSystem }
 }
 
 describe('gridRendererSystem', () => {
   it('create() calls add.graphics() on the scene', () => {
     const { world, eid } = makeWorld()
-    addComponent(world, eid, GridRendererSystem)
+    world.addComponent(GridRendererSystem, eid)
     expect(world.scene.add.graphics).toHaveBeenCalledOnce()
   })
 
   it('create() calls fillRect for every tile', () => {
     const { world, eid, gridRendererSystem } = makeWorld()
-    addComponent(world, eid, GridRendererSystem)
+    world.addComponent(GridRendererSystem, eid)
 
     const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
     // Should have calls for background + every individual tile (passable and obstacle)
@@ -66,7 +65,7 @@ describe('gridRendererSystem', () => {
 
   it('create() calls fillStyle for border, passable, and obstacle colors', () => {
     const { world, eid, gridRendererSystem } = makeWorld()
-    addComponent(world, eid, GridRendererSystem)
+    world.addComponent(GridRendererSystem, eid)
 
     const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
     // Should have at least 3 fillStyle calls (border, passable, obstacle)
@@ -75,7 +74,7 @@ describe('gridRendererSystem', () => {
 
   it('destroy() calls destroy() on the graphics object', () => {
     const { world, eid, gridRendererSystem } = makeWorld()
-    addComponent(world, eid, GridRendererSystem)
+    world.addComponent(GridRendererSystem, eid)
 
     const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
 
@@ -86,7 +85,7 @@ describe('gridRendererSystem', () => {
 
   it('destroy() is unsafe to call for an entity that was never created', () => {
     const { world } = makeWorld()
-    const unusedEid = addEntity(world)
+    const unusedEid = world.addEntity()
     const rendererSystem = world.systems.get(GridRendererSystem) as GridRendererSystem
     expect(() => rendererSystem.destroy(world, unusedEid)).toThrow()
   })

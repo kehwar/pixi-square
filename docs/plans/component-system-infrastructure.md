@@ -189,6 +189,8 @@ Refactor the three remaining systems. `UnitRendererSystem extends ComponentSyste
 
 ## Phase 6: Scene wiring
 
+> ✅ Completed — `GameScene` fully rewritten. All systems installed via `world.installSystem`. Grid entity created as `const gridEid`; `UnitFactorySystem` attached to the same entity, triggering unit spawning automatically. `GameScene.update` iterates `world.systems` with no named system references. `sleep`/`wake`/`pause`/`resume` Phaser scene events wired to per-entity hooks. Both `shutdown` and `destroy` call `_teardown()` (guarded by `_tornDown` flag): per-entity `destroy`, per-system `uninstall`, drain `world.observers`. 96/96 tests pass; no TypeScript or lint errors.
+
 **User stories**: 9, 10, 11, 12, 13, 14, 15, 21
 
 ### What to build
@@ -197,10 +199,82 @@ Update `GameScene.create()` to call `createWorld(this)` once and then `world.ins
 
 ### Acceptance criteria
 
-- [ ] `GameScene.create()` calls `createWorld(this)` once and `world.installSystem(new XSystem())` for every system; no manual per-system create calls remain
-- [ ] The grid entity is created as a local `const gridEid` inside `create()`; no `this.worldEid` member field exists on the class
-- [ ] `GameScene.update` iterates `world.systems` only — no named system references
-- [ ] Phaser `sleep`, `wake`, `pause`, `resume` events are wired to the corresponding world loop
-- [ ] Both `destroy` and `shutdown` events run the full teardown sequence; all `world.observers` are drained
-- [ ] Dev server renders 200 units wandering the grid identically to the pre-refactor behaviour
-- [ ] No Lint/TypeScript errors
+- [x] `GameScene.create()` calls `createWorld(this)` once and `world.installSystem(new XSystem())` for every system; no manual per-system create calls remain
+- [x] The grid entity is created as a local `const gridEid` inside `create()`; no `this.worldEid` member field exists on the class
+- [x] `GameScene.update` iterates `world.systems` only — no named system references
+- [x] Phaser `sleep`, `wake`, `pause`, `resume` events are wired to the corresponding world loop
+- [x] Both `destroy` and `shutdown` events run the full teardown sequence; all `world.observers` are drained
+- [x] Dev server renders 200 units wandering the grid identically to the pre-refactor behaviour
+- [x] No Lint/TypeScript errors
+
+### Notes
+
+- `this.worldEid` and `this.movementSystem` member fields removed entirely. The grid entity lives as `const gridEid` inside `create()`.
+- `WanderingSystem` and `UnitFactorySystem` are now installed via `world.installSystem` — their `create` hooks fire automatically through `observe`/`onAdd` when components are attached (no manual free-function calls).
+- `UnitFactorySystem` is added to the same `gridEid` entity as `GridSystem` and `GridRendererSystem`; `UnitFactorySystem.create` accesses `Grid[eid]!` which is populated by `GridSystem.create` first.
+- Install order is significant: `GridSystem` → `GridRendererSystem` → `PositionSystem` → `MovementSystem` → `PathfindingSystem` → `WanderingSystem` → `UnitRendererSystem` → `UnitFactorySystem`. `WanderingSystem` and `UnitRendererSystem` must be installed before `UnitFactorySystem.create` fires.
+- `GameScene.update` and all event handlers (`sleep`/`wake`/`pause`/`resume`) iterate `world.systems` (a `Map`) and call `query(world, [SystemClass])` per system. Systems with no-op `update` are called but are effectively free.
+- `_teardown()` is guarded by a `_tornDown` boolean to prevent double-execution when both `shutdown` and `destroy` fire (Phaser emits `shutdown` before `destroy` on scene removal).
+- Teardown sequence: per-entity `destroy` for each system (via `query`) → per-system `uninstall` → drain `world.observers` array.
+- Namespace imports (`* as UnitRendererSystem`, `* as WanderingSystem`, `* as UnitFactorySystem`) replaced with named class imports.
+
+---
+
+## Post-phase cleanup
+
+> ✅ Completed — series of incremental improvements applied after all six phases were green.
+
+### Changes
+
+**`world.addComponent(SystemClass, eid, init?)`**
+
+- Added to `GameWorldContext` interface and implemented in `createWorld`.
+- The optional `init(world, system, eid)` callback receives a fully-typed system instance so call sites can call methods on it instead of manipulating raw storage.
+- `GameScene` and `UnitFactorySystem` updated to use `world.addComponent` everywhere; bare `addComponent` from bitECS no longer appears at any call site outside of `World.ts`.
+- All spec file helpers updated accordingly.
+
+**`PositionSystem.setPosition(world, eid, col, row)`**
+
+- Encapsulates the pixel-coordinate math (`col * TILE_SIZE + TILE_SIZE / 2`, `row * TILE_SIZE + TILE_SIZE / 2`).
+- `UnitFactorySystem` calls `world.addComponent(PositionSystem, unitEid, (w, sys, e) => sys.setPosition(w, e, col, row))`.
+
+**`PositionSystem.setPixelPosition(world, eid, pixelX, pixelY)`**
+
+- Sets only the pixel coordinates without touching the tile coordinates — used by `MovementSystem` for sub-tile movement between waypoints.
+
+**`MovementSystem.update` uses `PositionSystem` methods**
+
+- Snap case: `posSystem.setPosition(world, eid, next.col, next.row)`.
+- Advance case: `posSystem.setPixelPosition(world, eid, x, y)`.
+- No direct writes to `posStorage` fields remain in `MovementSystem`.
+
+**`ComponentSystem` cleanup**
+
+- `addComponent` instance method removed from `ComponentSystem`; its logic (bitECS `addComponent` + optional callback) moved inline into `world.addComponent` in `World.ts`.
+- `import { addComponent as addBitECSComponent } from 'bitecs'` removed from `ComponentSystem.ts`.
+- The stub placeholder in `createBitECSWorld({…})` cast via `as GameWorldContext['addComponent']` to avoid a generic-parameter compatibility error.
+
+**`types.ts` → `World.ts`**
+
+- File renamed for clarity; all imports updated.
+
+**`Pathfinding` legacy alias removed**
+
+- The `export const Pathfinding = PathfindingSystem` alias from Phase 2 notes was confirmed unused and deleted.
+
+**Module-level singletons eliminated**
+
+- Every system creates fresh per-world storage inside `install()`. No module-level `Position`, `Movement`, `Grid`, `UnitSprite`, or `GridRendererStore` arrays remain.
+
+**`world.addEntity()` / `world.removeEntity(eid)`**
+
+- `world.addEntity()` wraps bitECS `addEntity`; all call sites (game code and tests) use it instead of importing directly from bitECS.
+- `world.removeEntity(eid)` manually calls `system.destroy(world, eid)` for every system that has the component attached (bitECS `removeEntity` does not fire `onRemove` observers), then calls bitECS `removeEntity` to free the entity ID.
+
+**`world.query(terms, ...modifiers)`**
+
+- Added to `GameWorldContext` with a signature identical to bitECS `query` minus the `world` argument: `(terms: QueryTerm[], ...modifiers: (QueryModifier | QueryOptions)[]) => QueryResult`.
+- `WanderingSystem` updated to use `world.query([GridSystem])` — bitECS import removed from that file.
+- All spec files updated to use `world.addEntity()` / `world.query(…)` — **zero direct bitECS imports remain in any test or game-logic file outside `World.ts` itself**.
+- `QueryResult`, `QueryTerm`, `QueryModifier`, `QueryOptions` imported from bitECS in `World.ts` to type the interface precisely.
+

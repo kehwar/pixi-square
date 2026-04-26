@@ -1,7 +1,7 @@
 import type { GameObjects } from 'phaser'
-import type { GameWorld } from './types'
+import type { GameWorld } from './World'
 import { ComponentSystem } from './ComponentSystem'
-import { COLS, Grid, GridSystem, isPassable, ROWS, TILE_SIZE } from './GridSystem'
+import { COLS, GridSystem, isPassable, ROWS, TILE_SIZE } from './GridSystem'
 
 const TILE_COLORS = {
   passable: 0x4A7C59,
@@ -15,15 +15,12 @@ export interface GridRendererData {
   graphics: GameObjects.Graphics
 }
 
-// --- Data store ---
-
-const GridRendererStore: GridRendererData[] = []
-
 // --- System class ---
 
 export class GridRendererSystem extends ComponentSystem<GridRendererData> {
   override install(world: GameWorld): void {
-    world.setupComponentStorage(GridRendererSystem, GridRendererStore)
+    const store: GridRendererData[] = []
+    world.setupComponentStorage(GridRendererSystem, store)
   }
 
   override create(world: GameWorld, eid: number): void {
@@ -63,5 +60,4 @@ export class GridRendererSystem extends ComponentSystem<GridRendererData> {
   }
 }
 
-// Re-export grid data for reference by other modules
-export { COLS, Grid, ROWS, TILE_SIZE }
+export { COLS, ROWS, TILE_SIZE }

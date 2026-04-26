@@ -1,10 +1,9 @@
-import { addComponent, addEntity } from 'bitecs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { TILE_SIZE } from '../GridSystem'
-import { addPositionComponent, Position, PositionSystem } from '../PositionSystem'
-import { createWorld } from '../types'
-import { UnitRendererSystem, UnitSprite } from '../UnitRendererSystem'
+import { PositionSystem } from '../PositionSystem'
+import { UnitRendererSystem } from '../UnitRendererSystem'
+import { createWorld } from '../World'
 
 // Mock Phaser before importing modules that depend on it
 vi.mock('phaser', () => {
@@ -33,7 +32,7 @@ vi.mock('phaser', () => {
 })
 
 afterEach(() => {
-  UnitSprite.length = 0
+  // storage is per-world; no global cleanup needed
 })
 
 function makeWorld(entityCount = 3): {
@@ -72,8 +71,8 @@ function makeWorld(entityCount = 3): {
 
   const eids: number[] = []
   for (let i = 0; i < entityCount; i++) {
-    const eid = addEntity(world)
-    addPositionComponent(world, eid, i + 1, i + 1)
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, i + 1, i + 1))
     eids.push(eid)
   }
 
@@ -101,9 +100,9 @@ describe('unitRendererSystem.install', () => {
 describe('unitRendererSystem.create', () => {
   it('calls add.image() when an entity gets the component', () => {
     const { world, addImageMock } = makeWorld(0)
-    const eid = addEntity(world)
-    addPositionComponent(world, eid, 1, 1)
-    addComponent(world, eid, UnitRendererSystem)
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, 1, 1))
+    world.addComponent(UnitRendererSystem, eid)
     expect(addImageMock).toHaveBeenCalledOnce()
   })
 
@@ -111,9 +110,9 @@ describe('unitRendererSystem.create', () => {
     const entityCount = 4
     const { world, addImageMock } = makeWorld(0)
     for (let i = 0; i < entityCount; i++) {
-      const eid = addEntity(world)
-      addPositionComponent(world, eid, i + 1, i + 1)
-      addComponent(world, eid, UnitRendererSystem)
+      const eid = world.addEntity()
+      world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, i + 1, i + 1))
+      world.addComponent(UnitRendererSystem, eid)
     }
     expect(addImageMock).toHaveBeenCalledTimes(entityCount)
   })
@@ -122,17 +121,18 @@ describe('unitRendererSystem.create', () => {
     const { world, addImageMock } = makeWorld(0)
     const eids: number[] = []
     for (let i = 0; i < 3; i++) {
-      const eid = addEntity(world)
-      addPositionComponent(world, eid, i + 1, i + 1)
-      addComponent(world, eid, UnitRendererSystem)
+      const eid = world.addEntity()
+      world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, i + 1, i + 1))
+      world.addComponent(UnitRendererSystem, eid)
       eids.push(eid)
     }
 
     for (let i = 0; i < eids.length; i++) {
       const eid = eids[i]!
+      const posStorage = world.getComponentStorage(PositionSystem)
       const call = addImageMock.mock.calls[i]!
-      expect(call[0]).toBe(Position.pixelX[eid])
-      expect(call[1]).toBe(Position.pixelY[eid])
+      expect(call[0]).toBe(posStorage.pixelX[eid])
+      expect(call[1]).toBe(posStorage.pixelY[eid])
       expect(call[2]).toBe('unit')
     }
   })
@@ -141,15 +141,16 @@ describe('unitRendererSystem.create', () => {
 describe('unitRendererSystem.update', () => {
   it('calls setPosition() on the sprite with current pixel coordinates', () => {
     const { world, eids, system } = makeWorld()
-    addComponent(world, eids[0]!, UnitRendererSystem)
+    world.addComponent(UnitRendererSystem, eids[0]!)
 
     // Move entity to a new position
-    Position.pixelX[eids[0]!] = 999
-    Position.pixelY[eids[0]!] = 888
+    const posStorage = world.getComponentStorage(PositionSystem)
+    posStorage.pixelX[eids[0]!] = 999
+    posStorage.pixelY[eids[0]!] = 888
 
     system.update(world, eids[0]!, 16)
 
-    const { sprite } = UnitSprite[eids[0]!]!
+    const { sprite } = world.getComponentStorage(UnitRendererSystem)[eids[0]!]!
     expect(sprite.setPosition).toHaveBeenLastCalledWith(999, 888)
   })
 
@@ -157,12 +158,13 @@ describe('unitRendererSystem.update', () => {
     const entityCount = 3
     const { world, eids, system } = makeWorld(entityCount)
     for (const eid of eids) {
-      addComponent(world, eid, UnitRendererSystem)
+      world.addComponent(UnitRendererSystem, eid)
     }
 
     for (const eid of eids) {
-      Position.pixelX[eid] = eid * 10
-      Position.pixelY[eid] = eid * 20
+      const posStorage = world.getComponentStorage(PositionSystem)
+      posStorage.pixelX[eid] = eid * 10
+      posStorage.pixelY[eid] = eid * 20
     }
 
     for (const eid of eids) {
@@ -170,7 +172,7 @@ describe('unitRendererSystem.update', () => {
     }
 
     for (const eid of eids) {
-      const { sprite } = UnitSprite[eid]!
+      const { sprite } = world.getComponentStorage(UnitRendererSystem)[eid]!
       expect(sprite.setPosition).toHaveBeenLastCalledWith(eid * 10, eid * 20)
     }
   })
@@ -179,34 +181,35 @@ describe('unitRendererSystem.update', () => {
 describe('unitRendererSystem.destroy', () => {
   it('calls sprite.destroy() for the entity', () => {
     const { world, system } = makeWorld(0)
-    const eid = addEntity(world)
-    addPositionComponent(world, eid, 1, 1)
-    addComponent(world, eid, UnitRendererSystem)
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, 1, 1))
+    world.addComponent(UnitRendererSystem, eid)
 
-    const sprite = UnitSprite[eid]!.sprite
+    const sprite = world.getComponentStorage(UnitRendererSystem)[eid]!.sprite
     system.destroy(world, eid)
     expect(sprite.destroy).toHaveBeenCalledOnce()
   })
 
   it('clears the UnitSprite store entry after destroying', () => {
     const { world, system } = makeWorld(0)
-    const eid = addEntity(world)
-    addPositionComponent(world, eid, 1, 1)
-    addComponent(world, eid, UnitRendererSystem)
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, 1, 1))
+    world.addComponent(UnitRendererSystem, eid)
 
     system.destroy(world, eid)
-    expect(UnitSprite[eid]).toBeUndefined()
+    expect(world.getComponentStorage(UnitRendererSystem)[eid]).toBeUndefined()
   })
 
   it('pixel coordinates are correct when image is first created', () => {
     const { world } = makeWorld(0)
-    const eid = addEntity(world)
-    addPositionComponent(world, eid, 3, 5)
-    addComponent(world, eid, UnitRendererSystem)
-    const { sprite } = UnitSprite[eid]!
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, 3, 5))
+    world.addComponent(UnitRendererSystem, eid)
+    const { sprite } = world.getComponentStorage(UnitRendererSystem)[eid]!
     // sprite was created with correct initial position
     expect(sprite).toBeDefined()
-    expect(Position.pixelX[eid]).toBe(3 * TILE_SIZE + TILE_SIZE / 2)
-    expect(Position.pixelY[eid]).toBe(5 * TILE_SIZE + TILE_SIZE / 2)
+    const posStorage = world.getComponentStorage(PositionSystem)
+    expect(posStorage.pixelX[eid]).toBe(3 * TILE_SIZE + TILE_SIZE / 2)
+    expect(posStorage.pixelY[eid]).toBe(5 * TILE_SIZE + TILE_SIZE / 2)
   })
 })

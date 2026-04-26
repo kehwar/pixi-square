@@ -1,5 +1,5 @@
 import type { GameObjects } from 'phaser'
-import type { GameWorld } from './types'
+import type { GameWorld } from './World'
 import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
 import { PositionSystem } from './PositionSystem'
@@ -14,15 +14,12 @@ export interface UnitSpriteData {
   sprite: GameObjects.Image
 }
 
-// --- Data store ---
-
-export const UnitSprite: UnitSpriteData[] = []
-
 // --- System class ---
 
 export class UnitRendererSystem extends ComponentSystem<UnitSpriteData> {
   override install(world: GameWorld): void {
-    world.setupComponentStorage(UnitRendererSystem, UnitSprite)
+    const unitSprite: UnitSpriteData[] = []
+    world.setupComponentStorage(UnitRendererSystem, unitSprite)
     const gfx = world.scene.add.graphics()
     gfx.fillStyle(0xFFD700, 1)
     gfx.fillRect(0, 0, UNIT_SIZE, UNIT_SIZE)

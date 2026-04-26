@@ -1,5 +1,4 @@
-import type { GameWorld } from './types'
-import { addComponent } from 'bitecs'
+import type { GameWorld } from './World'
 import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
 import { PositionSystem } from './PositionSystem'
@@ -15,18 +14,19 @@ export interface MovementData {
   path: { col: number, row: number }[]
 }
 
-// --- SoA storage ---
+// --- SoA storage type ---
 
-export const Movement = {
-  speed: [] as number[],
-  path: [] as { col: number, row: number }[][],
+export interface MovementStorage {
+  speed: number[]
+  path: { col: number, row: number }[][]
 }
 
 // --- System class ---
 
-export class MovementSystem extends ComponentSystem<MovementData, typeof Movement> {
+export class MovementSystem extends ComponentSystem<MovementData, MovementStorage> {
   override install(world: GameWorld): void {
-    world.setupComponentStorage(MovementSystem, Movement)
+    const storage: MovementStorage = { speed: [], path: [] }
+    world.setupComponentStorage(MovementSystem, storage)
   }
 
   override create(world: GameWorld, eid: number): void {
@@ -46,6 +46,7 @@ export class MovementSystem extends ComponentSystem<MovementData, typeof Movemen
   override update(world: GameWorld, eid: number, delta: number): void {
     const movStorage = this.getComponentStorage(world)
     const posStorage = world.getComponentStorage(PositionSystem)
+    const posSystem = world.systems.get(PositionSystem) as PositionSystem
 
     const path = movStorage.path[eid]
     if (!path || path.length === 0)
@@ -62,10 +63,7 @@ export class MovementSystem extends ComponentSystem<MovementData, typeof Movemen
 
     if (step >= dist) {
       // Arrived at or overshot waypoint — snap to tile centre
-      posStorage.pixelX[eid] = targetX
-      posStorage.pixelY[eid] = targetY
-      posStorage.col[eid] = next.col
-      posStorage.row[eid] = next.row
+      posSystem.setPosition(world, eid, next.col, next.row)
       path.shift()
       if (path.length === 0) {
         world.events.emit('movement:path-empty', eid)
@@ -73,20 +71,12 @@ export class MovementSystem extends ComponentSystem<MovementData, typeof Movemen
     }
     else {
       // Advance toward target
-      posStorage.pixelX[eid] = posStorage.pixelX[eid]! + dx * (step / dist)
-      posStorage.pixelY[eid] = posStorage.pixelY[eid]! + dy * (step / dist)
+      posSystem.setPixelPosition(
+        world,
+        eid,
+        posStorage.pixelX[eid]! + dx * (step / dist),
+        posStorage.pixelY[eid]! + dy * (step / dist),
+      )
     }
   }
-}
-
-// --- Call-site helper ---
-
-export function addMovementComponent(
-  world: GameWorld,
-  eid: number,
-  speed: number = DEFAULT_SPEED,
-): void {
-  addComponent(world, eid, MovementSystem)
-  // Override default from create:
-  Movement.speed[eid] = speed
 }
