@@ -1,9 +1,18 @@
-import type { World } from 'bitecs'
 import type { GameWorld } from './types'
 import { addComponent } from 'bitecs'
+import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
 
-// --- Component ---
+// --- Types ---
+
+export interface PositionData {
+  col: number
+  row: number
+  pixelX: number
+  pixelY: number
+}
+
+// --- SoA storage ---
 
 export const Position = {
   col: [] as number[],
@@ -12,15 +21,42 @@ export const Position = {
   pixelY: [] as number[],
 }
 
-// --- System functions ---
+// --- System class ---
+
+export class PositionSystem extends ComponentSystem<PositionData, typeof Position> {
+  override install(world: GameWorld): void {
+    world.setupComponentStorage(PositionSystem, Position)
+  }
+
+  override create(world: GameWorld, eid: number): void {
+    const s = this.getComponentStorage(world)
+    s.col[eid] = 0
+    s.row[eid] = 0
+    s.pixelX[eid] = 0
+    s.pixelY[eid] = 0
+  }
+
+  override getComponent(world: GameWorld, eid: number): PositionData {
+    const s = this.getComponentStorage(world)
+    return {
+      col: s.col[eid]!,
+      row: s.row[eid]!,
+      pixelX: s.pixelX[eid]!,
+      pixelY: s.pixelY[eid]!,
+    }
+  }
+}
+
+// --- Call-site helper ---
 
 export function addPositionComponent(
-  world: World<GameWorld>,
+  world: GameWorld,
   eid: number,
   col: number,
   row: number,
 ): void {
-  addComponent(world, eid, Position)
+  addComponent(world, eid, PositionSystem)
+  // Override zero-defaults from create:
   Position.col[eid] = col
   Position.row[eid] = row
   Position.pixelX[eid] = col * TILE_SIZE + TILE_SIZE / 2

@@ -115,6 +115,8 @@ Refactor `GridSystem` and `GridRendererSystem` to extend `ComponentSystem` with 
 
 ## Phase 4: Movement & pathfinding migration
 
+> ✅ Completed — `PositionSystem` and `MovementSystem` converted to `ComponentSystem` SoA subclasses. Both use `this.getComponentStorage(world)` internally — no direct module-level SoA references inside class methods. `MovementSystem.update` accesses Position storage via `world.components.get(PositionSystem)`. `GameWorld` gained `world.getComponent(SystemClass, eid)` and `world.getComponentStorage(SystemClass)` — O(1) typed lookups. `world.systems` is now `Map<ComponentSystemClass, ComponentSystem<any,any>>`. `GridRendererSystem` updated to use `world.getComponent(GridSystem, eid)`. `ComponentSystemClass` default `TStorage` widened to `any`. `GameScene` installs `PositionSystem`, `MovementSystem`, `PathfindingSystem`; update loop queries `[MovementSystem]` per-entity. `MovementSystem.spec.ts` updated. 90/92 tests pass (2 `UnitFactorySystem` failures deferred to Phase 5). No TypeScript or lint errors.
+
 **User stories**: 20 (PositionSystem, MovementSystem, PathfindingSystem)
 
 ### What to build
@@ -123,14 +125,28 @@ Refactor `PositionSystem` and `MovementSystem` to extend `ComponentSystem` using
 
 ### Acceptance criteria
 
-- [ ] `PositionSystem` extends `ComponentSystem<PositionData, typeof Position>`; registers the module-level `Position` SoA object in `install`; `create` zero-initialises all four slots (`col`, `row`, `pixelX`, `pixelY`) for `eid`; `getComponent` (instance) overrides to return `{ col, row, pixelX, pixelY }` plucked from the arrays
-- [ ] `addPositionComponent(world, eid, col, row)` calls `addComponent(world, eid, PositionSystem)` then sets the four array slots to the provided coords, overriding the zero-defaults from `create`
-- [ ] `MovementSystem` extends `ComponentSystem<MovementData, typeof Movement>`; registers the `Movement` SoA object in `install`; `create` sets `speed = DEFAULT_SPEED` and `path = []`; `getComponent` (instance) overrides to return `{ speed, path }` plucked from arrays
-- [ ] `addMovementComponent(world, eid, speed?)` calls `addComponent(world, eid, MovementSystem)` then sets `speed` (defaulting to `DEFAULT_SPEED`); the zero-default from `create` is overwritten
-- [ ] `MovementSystem.update(world, eid, delta)` per-entity signature; no internal `query` call; accesses `Position` SoA arrays directly; `'movement:path-empty'` emitted on `world.events` as before
-- [ ] `PathfindingSystem` is a no-op `ComponentSystem<object>` (already done in phase 2) — no further changes needed to the class itself
-- [ ] `MovementSystem.spec.ts` updated to new hook signatures; all existing movement and path-empty assertions pass
-- [ ] No Lint/TypeScript errors
+- [x] `PositionSystem` extends `ComponentSystem<PositionData, typeof Position>`; registers the module-level `Position` SoA object in `install`; `create` zero-initialises all four slots (`col`, `row`, `pixelX`, `pixelY`) for `eid`; `getComponent` (instance) overrides to return `{ col, row, pixelX, pixelY }` plucked from the arrays
+- [x] `addPositionComponent(world, eid, col, row)` calls `addComponent(world, eid, PositionSystem)` then sets the four array slots to the provided coords, overriding the zero-defaults from `create`
+- [x] `MovementSystem` extends `ComponentSystem<MovementData, typeof Movement>`; registers the `Movement` SoA object in `install`; `create` sets `speed = DEFAULT_SPEED` and `path = []`; `getComponent` (instance) overrides to return `{ speed, path }` plucked from arrays
+- [x] `addMovementComponent(world, eid, speed?)` calls `addComponent(world, eid, MovementSystem)` then sets `speed` (defaulting to `DEFAULT_SPEED`); the zero-default from `create` is overwritten
+- [x] `MovementSystem.update(world, eid, delta)` per-entity signature; no internal `query` call; accesses `Position` SoA arrays directly; `'movement:path-empty'` emitted on `world.events` as before
+- [x] `PathfindingSystem` is a no-op `ComponentSystem<object>` (already done in phase 2) — no further changes needed to the class itself
+- [x] `MovementSystem.spec.ts` updated to new hook signatures; all existing movement and path-empty assertions pass
+- [x] No Lint/TypeScript errors
+
+### Notes
+
+- `PositionData` interface added to `PositionSystem.ts` with four fields: `col`, `row`, `pixelX`, `pixelY`. `Position` SoA object remains the module-level data store; `PositionSystem` class is the bitECS component token.
+- `MovementData` interface added to `MovementSystem.ts` with `speed` and `path`. The old `TileCoord` import from `GridSystem` was replaced by an inline `{ col: number, row: number }` type in `MovementData` and the `Movement` SoA object.
+- Old free-function `update(world, delta)` export removed from `MovementSystem.ts`; `MovementSystem.update(world, eid, delta)` is now an instance override.
+- `PositionSystem.create` and `getComponent` use `this.getComponentStorage(world)` — no direct `Position` singleton reference inside the class. `MovementSystem.create`, `getComponent`, and `update` likewise use `this.getComponentStorage(world)` for movement data; `update` accesses position storage via `world.components.get(PositionSystem)` rather than importing `Position` directly.
+- `GameWorld` (via `GameWorldContext`) gained two new methods during this phase: `world.getComponent(SystemClass, eid)` — typed O(1) lookup via `world.systems.get(SystemClass)`; and `world.getComponentStorage(SystemClass)` — typed O(1) lookup into `world.components`. Both infer their return types from the system class's type parameters.
+- `world.systems` changed from `Array` → `Set` → `Map<ComponentSystemClass, ComponentSystem<any,any>>`, settling on `Map` for O(1) keyed access. `installSystem` now keys with `system.constructor`.
+- `GridRendererSystem.create` uses `world.getComponent(GridSystem, eid)` instead of `Grid[eid]` directly.
+- `ComponentSystemClass` default for `TStorage` changed from `TComponent[]` to `any` so SoA subclasses with non-array storage are accepted wherever bare `ComponentSystem` or `ComponentSystemClass` is used.
+- `GameScene` stores `movementSystem` as a private field and queries `[MovementSystem]` in `update` to iterate per-entity. `PositionSystem` and `PathfindingSystem` are also wired via `world.installSystem` with no stored reference needed.
+- `MovementSystem.spec.ts` `makeWorld` pre-registers both SoA stores in the `components` map and sets `systems: new Map()` / includes `getComponentStorage` stub so `getComponentStorage(world)` resolves without a full `installSystem` call.
+- 2 `UnitFactorySystem.spec.ts` tests fail because they query `query(world, [Position, Movement])` using old SoA objects as tokens instead of `[PositionSystem, MovementSystem]`. These will be fixed in Phase 5.
 
 ---
 

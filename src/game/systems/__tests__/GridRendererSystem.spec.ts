@@ -87,7 +87,7 @@ describe('gridRendererSystem', () => {
   it('destroy() is unsafe to call for an entity that was never created', () => {
     const { world } = makeWorld()
     const unusedEid = addEntity(world)
-    const rendererSystem = world.systems.find(s => s instanceof GridRendererSystem) as GridRendererSystem
+    const rendererSystem = world.systems.get(GridRendererSystem) as GridRendererSystem
     expect(() => rendererSystem.destroy(world, unusedEid)).toThrow()
   })
 })

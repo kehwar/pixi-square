@@ -1,10 +1,12 @@
 import type { GameWorld } from '../systems/types'
-import { addComponent, addEntity } from 'bitecs'
+import { addComponent, addEntity, query } from 'bitecs'
 import { Scene } from 'phaser'
 import { EventBus } from '../EventBus'
 import { GridRendererSystem } from '../systems/GridRendererSystem'
 import { COLS, GridSystem, ROWS, TILE_SIZE } from '../systems/GridSystem'
-import * as MovementSystem from '../systems/MovementSystem'
+import { MovementSystem } from '../systems/MovementSystem'
+import { PathfindingSystem } from '../systems/PathfindingSystem'
+import { PositionSystem } from '../systems/PositionSystem'
 import { createWorld } from '../systems/types'
 import * as UnitFactorySystem from '../systems/UnitFactorySystem'
 import * as UnitRendererSystem from '../systems/UnitRendererSystem'
@@ -13,6 +15,7 @@ import * as WanderingSystem from '../systems/WanderingSystem'
 export class GameScene extends Scene {
   private world!: GameWorld
   private worldEid!: number
+  private movementSystem!: MovementSystem
 
   constructor() {
     super('Game')
@@ -26,6 +29,11 @@ export class GameScene extends Scene {
     this.world.installSystem(new GridSystem())
     const gridRenderer = new GridRendererSystem()
     this.world.installSystem(gridRenderer)
+    this.world.installSystem(new PositionSystem())
+    const movementSystem = new MovementSystem()
+    this.world.installSystem(movementSystem)
+    this.movementSystem = movementSystem
+    this.world.installSystem(new PathfindingSystem())
     addComponent(this.world, this.worldEid, GridSystem)
     addComponent(this.world, this.worldEid, GridRendererSystem)
 
@@ -47,7 +55,10 @@ export class GameScene extends Scene {
   }
 
   update(_time: number, delta: number): void {
-    MovementSystem.update(this.world, delta)
+    const eids = query(this.world, [MovementSystem])
+    for (const eid of eids) {
+      this.movementSystem.update(this.world, eid, delta)
+    }
     UnitRendererSystem.update(this.world)
   }
 }

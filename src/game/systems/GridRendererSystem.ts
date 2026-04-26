@@ -1,7 +1,7 @@
 import type { GameObjects } from 'phaser'
 import type { GameWorld } from './types'
 import { ComponentSystem } from './ComponentSystem'
-import { COLS, Grid, isPassable, ROWS, TILE_SIZE } from './GridSystem'
+import { COLS, Grid, GridSystem, isPassable, ROWS, TILE_SIZE } from './GridSystem'
 
 const TILE_COLORS = {
   passable: 0x4A7C59,
@@ -31,7 +31,7 @@ export class GridRendererSystem extends ComponentSystem<GridRendererData> {
     const gfx = world.scene.add.graphics()
     this.setComponent(world, eid, { graphics: gfx })
 
-    const gridData = Grid[eid]!
+    const gridData = world.getComponent(GridSystem, eid)
 
     // Background (border color)
     gfx.fillStyle(TILE_COLORS.border, 1)
@@ -57,7 +57,7 @@ export class GridRendererSystem extends ComponentSystem<GridRendererData> {
   }
 
   override destroy(world: GameWorld, eid: number): void {
-    const {graphics} = this.getComponent(world, eid)
+    const { graphics } = this.getComponent(world, eid)
     graphics.destroy()
     super.destroy(world, eid)
   }

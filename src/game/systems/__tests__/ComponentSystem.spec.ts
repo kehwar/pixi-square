@@ -30,7 +30,7 @@ describe('componentSystem', () => {
       expect(world.events).toBeDefined()
       expect(world.components).toBeInstanceOf(Map)
       expect(world.observers).toBeInstanceOf(Array)
-      expect(world.systems).toBeInstanceOf(Array)
+      expect(world.systems).toBeInstanceOf(Map)
       expect(typeof world.installSystem).toBe('function')
       expect(typeof world.setupComponentStorage).toBe('function')
     })
@@ -41,7 +41,7 @@ describe('componentSystem', () => {
       const world = createWorld(fakeScene)
       const system = new FakeSystem()
       world.installSystem(system)
-      expect(world.systems).toContain(system)
+      expect(world.systems.get(FakeSystem)).toBe(system)
     })
 
     it('calls system.install exactly once', () => {

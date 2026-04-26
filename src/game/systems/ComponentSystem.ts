@@ -1,6 +1,6 @@
 import type { GameWorld } from './types'
 
-export type ComponentSystemClass<TComponent = any, TStorage = TComponent[]>
+export type ComponentSystemClass<TComponent = any, TStorage = any>
   = abstract new (...args: any[]) => ComponentSystem<TComponent, TStorage>
 
 export abstract class ComponentSystem<TComponent = unknown, TStorage = TComponent[]> {
@@ -32,7 +32,7 @@ export abstract class ComponentSystem<TComponent = unknown, TStorage = TComponen
    */
   getComponentStorage(world: GameWorld): TStorage {
     const Ctor = this.constructor as ComponentSystemClass<TComponent, TStorage>
-    return world.components.get(Ctor) as TStorage
+    return world.getComponentStorage(Ctor)
   }
 
   /**
@@ -53,9 +53,8 @@ export abstract class ComponentSystem<TComponent = unknown, TStorage = TComponen
    */
   setComponent(world: GameWorld, eid: number, value: TComponent): void {
     const storage = this.getComponentStorage(world) as unknown as TComponent[]
-    storage[eid] = value
+    storage[eid] = value as TComponent
   }
-
 
   /**
    * Clears the per-entity component value for `eid`.
@@ -65,6 +64,7 @@ export abstract class ComponentSystem<TComponent = unknown, TStorage = TComponen
    */
   clearComponent(world: GameWorld, eid: number): void {
     const storage = this.getComponentStorage(world) as unknown as TComponent[]
-    if (storage) delete storage[eid]
+    if (storage)
+      delete storage[eid]
   }
 }

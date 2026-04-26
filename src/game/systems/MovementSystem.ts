@@ -1,55 +1,71 @@
-import type { World } from 'bitecs'
-import type { TileCoord } from './GridSystem'
 import type { GameWorld } from './types'
-import { addComponent, query } from 'bitecs'
+import { addComponent } from 'bitecs'
+import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
-import { Position } from './PositionSystem'
+import { PositionSystem } from './PositionSystem'
 
 // --- Constants ---
 
 export const DEFAULT_SPEED = 6 // tiles per second
 
-// --- Component ---
+// --- Types ---
+
+export interface MovementData {
+  speed: number
+  path: { col: number, row: number }[]
+}
+
+// --- SoA storage ---
 
 export const Movement = {
   speed: [] as number[],
-  path: [] as TileCoord[][],
+  path: [] as { col: number, row: number }[][],
 }
 
-// --- System functions ---
+// --- System class ---
 
-export function addMovementComponent(
-  world: World<GameWorld>,
-  eid: number,
-  speed: number = DEFAULT_SPEED,
-): void {
-  addComponent(world, eid, Movement)
-  Movement.speed[eid] = speed
-  Movement.path[eid] = []
-}
+export class MovementSystem extends ComponentSystem<MovementData, typeof Movement> {
+  override install(world: GameWorld): void {
+    world.setupComponentStorage(MovementSystem, Movement)
+  }
 
-export function update(world: World<GameWorld>, delta: number): void {
-  const eids = query(world, [Position, Movement])
-  for (const eid of eids) {
-    const path = Movement.path[eid]
+  override create(world: GameWorld, eid: number): void {
+    const s = this.getComponentStorage(world)
+    s.speed[eid] = DEFAULT_SPEED
+    s.path[eid] = []
+  }
+
+  override getComponent(world: GameWorld, eid: number): MovementData {
+    const s = this.getComponentStorage(world)
+    return {
+      speed: s.speed[eid]!,
+      path: s.path[eid]!,
+    }
+  }
+
+  override update(world: GameWorld, eid: number, delta: number): void {
+    const movStorage = this.getComponentStorage(world)
+    const posStorage = world.getComponentStorage(PositionSystem)
+
+    const path = movStorage.path[eid]
     if (!path || path.length === 0)
-      continue
+      return
 
     const next = path[0]!
     const targetX = next.col * TILE_SIZE + TILE_SIZE / 2
     const targetY = next.row * TILE_SIZE + TILE_SIZE / 2
 
-    const dx = targetX - Position.pixelX[eid]!
-    const dy = targetY - Position.pixelY[eid]!
+    const dx = targetX - posStorage.pixelX[eid]!
+    const dy = targetY - posStorage.pixelY[eid]!
     const dist = Math.sqrt(dx * dx + dy * dy)
-    const step = Movement.speed[eid]! * TILE_SIZE * (delta / 1000)
+    const step = movStorage.speed[eid]! * TILE_SIZE * (delta / 1000)
 
     if (step >= dist) {
       // Arrived at or overshot waypoint — snap to tile centre
-      Position.pixelX[eid] = targetX
-      Position.pixelY[eid] = targetY
-      Position.col[eid] = next.col
-      Position.row[eid] = next.row
+      posStorage.pixelX[eid] = targetX
+      posStorage.pixelY[eid] = targetY
+      posStorage.col[eid] = next.col
+      posStorage.row[eid] = next.row
       path.shift()
       if (path.length === 0) {
         world.events.emit('movement:path-empty', eid)
@@ -57,8 +73,20 @@ export function update(world: World<GameWorld>, delta: number): void {
     }
     else {
       // Advance toward target
-      Position.pixelX[eid] = Position.pixelX[eid]! + dx * (step / dist)
-      Position.pixelY[eid] = Position.pixelY[eid]! + dy * (step / dist)
+      posStorage.pixelX[eid] = posStorage.pixelX[eid]! + dx * (step / dist)
+      posStorage.pixelY[eid] = posStorage.pixelY[eid]! + dy * (step / dist)
     }
   }
+}
+
+// --- Call-site helper ---
+
+export function addMovementComponent(
+  world: GameWorld,
+  eid: number,
+  speed: number = DEFAULT_SPEED,
+): void {
+  addComponent(world, eid, MovementSystem)
+  // Override default from create:
+  Movement.speed[eid] = speed
 }
