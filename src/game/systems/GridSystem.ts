@@ -1,6 +1,5 @@
-import type { World } from 'bitecs'
 import type { GameWorld } from './types'
-import { addComponent } from 'bitecs'
+import { ComponentSystem } from './ComponentSystem'
 
 // --- Constants ---
 
@@ -22,29 +21,38 @@ export interface TileCoord {
   row: number
 }
 
-// --- Component ---
+// --- Data type ---
 
 export interface GridData {
   tiles: Tile[][]
 }
 
+// --- Data store ---
+
 export const Grid: GridData[] = []
 
-// --- System functions ---
+// --- System class ---
 
-export function create(world: World<GameWorld>, worldEid: number): void {
-  addComponent(world, worldEid, Grid)
-  const rows: Tile[][] = []
-  for (let row = 0; row < ROWS; row++) {
-    const cols: Tile[] = []
-    for (let col = 0; col < COLS; col++) {
-      const isObstacle = Math.random() < OBSTACLE_DENSITY
-      cols.push({ type: isObstacle ? 'obstacle' : 'passable' })
-    }
-    rows.push(cols)
+export class GridSystem extends ComponentSystem<GridData> {
+  override install(world: GameWorld): void {
+    world.setupComponentStorage(GridSystem, Grid)
   }
-  Grid[worldEid] = { tiles: rows }
+
+  override create(world: GameWorld, eid: number): void {
+    const rows: Tile[][] = []
+    for (let row = 0; row < ROWS; row++) {
+      const cols: Tile[] = []
+      for (let col = 0; col < COLS; col++) {
+        const isObstacle = Math.random() < OBSTACLE_DENSITY
+        cols.push({ type: isObstacle ? 'obstacle' : 'passable' })
+      }
+      rows.push(cols)
+    }
+    this.setComponent(world, eid, { tiles: rows })
+  }
 }
+
+// --- Pure utility functions ---
 
 export function isPassable(gridData: GridData, col: number, row: number): boolean {
   if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {

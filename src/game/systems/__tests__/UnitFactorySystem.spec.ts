@@ -1,18 +1,26 @@
-import type { GameWorld } from '../types'
-import { addEntity, createWorld, query } from 'bitecs'
-import { describe, expect, it } from 'vitest'
-import * as GridSystem from '../GridSystem'
+import { addComponent, addEntity, query } from 'bitecs'
+import { describe, expect, it, vi } from 'vitest'
+import { Grid, GridSystem, isPassable, TILE_SIZE } from '../GridSystem'
 import { Movement } from '../MovementSystem'
 import { Position } from '../PositionSystem'
+import { createWorld } from '../types'
 import * as UnitFactorySystem from '../UnitFactorySystem'
 
+vi.mock('phaser', () => {
+  class EventEmitter {}
+  return { Events: { EventEmitter } }
+})
+
+const fakeScene = {} as Parameters<typeof createWorld>[0]
+
 function makeWorld(): {
-  world: ReturnType<typeof createWorld<GameWorld>>
+  world: ReturnType<typeof createWorld>
   worldEid: number
 } {
-  const world = createWorld<GameWorld>({} as GameWorld)
+  const world = createWorld(fakeScene)
+  world.installSystem(new GridSystem())
   const worldEid = addEntity(world)
-  GridSystem.create(world, worldEid)
+  addComponent(world, worldEid, GridSystem)
   return { world, worldEid }
 }
 
@@ -36,9 +44,9 @@ describe('unitFactorySystem', () => {
     const { world, worldEid } = makeWorld()
     UnitFactorySystem.create(world, worldEid)
     const entities = Array.from(query(world, [Position, Movement]))
-    const gridData = GridSystem.Grid[worldEid]!
+    const gridData = Grid[worldEid]!
     for (const eid of entities) {
-      expect(GridSystem.isPassable(gridData, Position.col[eid]!, Position.row[eid]!)).toBe(true)
+      expect(isPassable(gridData, Position.col[eid]!, Position.row[eid]!)).toBe(true)
     }
   })
 
@@ -47,8 +55,8 @@ describe('unitFactorySystem', () => {
     UnitFactorySystem.create(world, worldEid)
     const entities = Array.from(query(world, [Position, Movement]))
     for (const eid of entities) {
-      expect(Position.pixelX[eid]).toBe(Position.col[eid]! * GridSystem.TILE_SIZE + GridSystem.TILE_SIZE / 2)
-      expect(Position.pixelY[eid]).toBe(Position.row[eid]! * GridSystem.TILE_SIZE + GridSystem.TILE_SIZE / 2)
+      expect(Position.pixelX[eid]).toBe(Position.col[eid]! * TILE_SIZE + TILE_SIZE / 2)
+      expect(Position.pixelY[eid]).toBe(Position.row[eid]! * TILE_SIZE + TILE_SIZE / 2)
     }
   })
 })

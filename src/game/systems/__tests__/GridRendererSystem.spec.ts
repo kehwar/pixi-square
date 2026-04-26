@@ -1,9 +1,8 @@
-import type { GameWorld } from '../types'
-import { addEntity, createWorld } from 'bitecs'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import * as GridRendererSystem from '../GridRendererSystem'
-import * as GridSystem from '../GridSystem'
+import { addComponent, addEntity } from 'bitecs'
+import { describe, expect, it, vi } from 'vitest'
+import { COLS, GridRendererSystem, ROWS, TILE_SIZE } from '../GridRendererSystem'
+import { GridSystem } from '../GridSystem'
+import { createWorld } from '../types'
 
 // Mock Phaser before importing modules that depend on it
 vi.mock('phaser', () => {
@@ -24,7 +23,7 @@ vi.mock('phaser', () => {
   return { Scene, Events: { EventEmitter } }
 })
 
-function makeWorld(): { world: ReturnType<typeof createWorld<GameWorld>>, worldEid: number } {
+function makeWorld(): { world: ReturnType<typeof createWorld>, eid: number, gridRendererSystem: GridRendererSystem } {
   const mockScene = {
     add: {
       graphics: vi.fn(() => ({
@@ -33,61 +32,62 @@ function makeWorld(): { world: ReturnType<typeof createWorld<GameWorld>>, worldE
         destroy: vi.fn(),
       })),
     },
-  } as unknown as GameWorld['scene']
+  } as unknown as Parameters<typeof createWorld>[0]
 
-  const world = createWorld<GameWorld>({ scene: mockScene } as GameWorld)
-  const worldEid = addEntity(world)
-  GridSystem.create(world, worldEid)
-  return { world, worldEid }
+  const world = createWorld(mockScene)
+  world.installSystem(new GridSystem())
+  const gridRendererSystem = new GridRendererSystem()
+  world.installSystem(gridRendererSystem)
+  const eid = addEntity(world)
+  // Add GridSystem component first so Grid[eid] is populated before GridRendererSystem.create fires
+  addComponent(world, eid, GridSystem)
+  return { world, eid, gridRendererSystem }
 }
 
 describe('gridRendererSystem', () => {
-  beforeEach(() => {
-    GridRendererSystem._reset()
-  })
-
   it('create() calls add.graphics() on the scene', () => {
-    const { world, worldEid } = makeWorld()
-    GridRendererSystem.create(world, worldEid)
+    const { world, eid } = makeWorld()
+    addComponent(world, eid, GridRendererSystem)
     expect(world.scene.add.graphics).toHaveBeenCalledOnce()
   })
 
   it('create() calls fillRect for every tile', () => {
-    const { world, worldEid } = makeWorld()
-    GridRendererSystem.create(world, worldEid)
+    const { world, eid, gridRendererSystem } = makeWorld()
+    addComponent(world, eid, GridRendererSystem)
 
-    const gfx = GridRendererSystem._getGraphics()
+    const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
     // Should have calls for background + every individual tile (passable and obstacle)
     // At minimum: 1 background + COLS*ROWS tile calls
-    const totalTiles = GridRendererSystem.COLS * GridRendererSystem.ROWS
-    expect(gfx!.fillRect).toHaveBeenCalledWith(0, 0, GridRendererSystem.COLS * GridRendererSystem.TILE_SIZE, GridRendererSystem.ROWS * GridRendererSystem.TILE_SIZE)
+    const totalTiles = COLS * ROWS
+    expect(gfx.fillRect).toHaveBeenCalledWith(0, 0, COLS * TILE_SIZE, ROWS * TILE_SIZE)
     // One fillRect per tile plus the background call
-    expect((gfx!.fillRect as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(totalTiles + 1)
+    expect((gfx.fillRect as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(totalTiles + 1)
   })
 
   it('create() calls fillStyle for border, passable, and obstacle colors', () => {
-    const { world, worldEid } = makeWorld()
-    GridRendererSystem.create(world, worldEid)
+    const { world, eid, gridRendererSystem } = makeWorld()
+    addComponent(world, eid, GridRendererSystem)
 
-    const gfx = GridRendererSystem._getGraphics()
+    const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
     // Should have at least 3 fillStyle calls (border, passable, obstacle)
-    expect((gfx!.fillStyle as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(3)
+    expect((gfx.fillStyle as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('destroySystems() calls destroy() on the graphics object', () => {
-    const { world, worldEid } = makeWorld()
-    GridRendererSystem.create(world, worldEid)
+  it('destroy() calls destroy() on the graphics object', () => {
+    const { world, eid, gridRendererSystem } = makeWorld()
+    addComponent(world, eid, GridRendererSystem)
 
-    const gfx = GridRendererSystem._getGraphics()
-    expect(gfx).not.toBeNull()
+    const { graphics: gfx } = gridRendererSystem.getComponent(world, eid)
 
-    GridRendererSystem.destroySystems(world)
-    expect(gfx!.destroy).toHaveBeenCalledOnce()
-    expect(GridRendererSystem._getGraphics()).toBeNull()
+    gridRendererSystem.destroy(world, eid)
+
+    expect(gfx.destroy).toHaveBeenCalledOnce()
   })
 
-  it('destroySystems() is safe to call without prior create()', () => {
+  it('destroy() is unsafe to call for an entity that was never created', () => {
     const { world } = makeWorld()
-    expect(() => GridRendererSystem.destroySystems(world)).not.toThrow()
+    const unusedEid = addEntity(world)
+    const rendererSystem = world.systems.find(s => s instanceof GridRendererSystem) as GridRendererSystem
+    expect(() => rendererSystem.destroy(world, unusedEid)).toThrow()
   })
 })

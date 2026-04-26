@@ -32,7 +32,7 @@ describe('componentSystem', () => {
       expect(world.observers).toBeInstanceOf(Array)
       expect(world.systems).toBeInstanceOf(Array)
       expect(typeof world.installSystem).toBe('function')
-      expect(typeof world.setupComponentData).toBe('function')
+      expect(typeof world.setupComponentStorage).toBe('function')
     })
   })
 
@@ -53,12 +53,13 @@ describe('componentSystem', () => {
       expect(installSpy).toHaveBeenCalledWith(world)
     })
 
-    it('stores an unsubscribe function in world.observers', () => {
+    it('stores two unsubscribe functions in world.observers (onAdd + onRemove)', () => {
       const world = createWorld(fakeScene)
       const system = new FakeSystem()
       world.installSystem(system)
-      expect(world.observers).toHaveLength(1)
+      expect(world.observers).toHaveLength(2)
       expect(typeof world.observers[0]).toBe('function')
+      expect(typeof world.observers[1]).toBe('function')
     })
 
     it('drains world.observers after calling each unsubscribe', () => {
@@ -67,9 +68,9 @@ describe('componentSystem', () => {
       world.installSystem(system)
       const unsub = world.observers[0]!
       unsub()
-      // after manual drain the function was called; observers array still references the item
-      // but the observer itself is inactive — this confirms observers are stored
-      expect(world.observers).toHaveLength(1)
+      // after manual drain the function was called; observers array still references the items
+      // but the observers themselves are inactive — this confirms both are stored
+      expect(world.observers).toHaveLength(2)
     })
   })
 
@@ -94,17 +95,18 @@ describe('componentSystem', () => {
     it('stores data keyed by system constructor', () => {
       const world = createWorld(fakeScene)
       const container: FakeData[] = []
-      world.setupComponentData(FakeSystem, container)
+      world.setupComponentStorage(FakeSystem, container)
       expect(world.components.get(FakeSystem)).toBe(container)
     })
 
     it('getComponent returns the typed per-entity object', () => {
       const world = createWorld(fakeScene)
+      const system = new FakeSystem()
       const container: FakeData[] = []
       const eid = 42
       container[eid] = { value: 99 }
-      world.setupComponentData(FakeSystem, container)
-      const result = FakeSystem.getComponent(world, eid)
+      world.setupComponentStorage(FakeSystem, container)
+      const result = system.getComponent(world, eid)
       expect(result).toEqual({ value: 99 })
     })
   })

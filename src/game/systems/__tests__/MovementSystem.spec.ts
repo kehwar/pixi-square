@@ -41,7 +41,7 @@ function makeWorld(): {
     observers: [],
     systems: [],
     installSystem: () => {},
-    setupComponentData: () => {},
+    setupComponentStorage: () => {},
   })
   const eid = addEntity(world)
   addPositionComponent(world, eid, 5, 5)

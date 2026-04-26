@@ -1,16 +1,17 @@
 import type { GameWorld } from '../systems/types'
-import { addEntity, createWorld } from 'bitecs'
-import { Events, Scene } from 'phaser'
+import { addComponent, addEntity } from 'bitecs'
+import { Scene } from 'phaser'
 import { EventBus } from '../EventBus'
-import * as GridRendererSystem from '../systems/GridRendererSystem'
-import * as GridSystem from '../systems/GridSystem'
+import { GridRendererSystem } from '../systems/GridRendererSystem'
+import { COLS, GridSystem, ROWS, TILE_SIZE } from '../systems/GridSystem'
 import * as MovementSystem from '../systems/MovementSystem'
+import { createWorld } from '../systems/types'
 import * as UnitFactorySystem from '../systems/UnitFactorySystem'
 import * as UnitRendererSystem from '../systems/UnitRendererSystem'
 import * as WanderingSystem from '../systems/WanderingSystem'
 
 export class GameScene extends Scene {
-  private world!: ReturnType<typeof createWorld<GameWorld>>
+  private world!: GameWorld
   private worldEid!: number
 
   constructor() {
@@ -18,23 +19,26 @@ export class GameScene extends Scene {
   }
 
   create(): void {
-    this.world = createWorld<GameWorld>({
-      scene: this,
-      events: new Events.EventEmitter(),
-    })
+    this.world = createWorld(this)
 
     this.worldEid = addEntity(this.world)
-    GridSystem.create(this.world, this.worldEid)
-    GridRendererSystem.create(this.world, this.worldEid)
+
+    this.world.installSystem(new GridSystem())
+    const gridRenderer = new GridRendererSystem()
+    this.world.installSystem(gridRenderer)
+    addComponent(this.world, this.worldEid, GridSystem)
+    addComponent(this.world, this.worldEid, GridRendererSystem)
+
     WanderingSystem.create(this.world, this.worldEid)
     UnitFactorySystem.create(this.world, this.worldEid)
 
-    const gridWidth = GridSystem.COLS * GridSystem.TILE_SIZE
-    const gridHeight = GridSystem.ROWS * GridSystem.TILE_SIZE
+    const gridWidth = COLS * TILE_SIZE
+    const gridHeight = ROWS * TILE_SIZE
     this.cameras.main.centerOn(gridWidth / 2, gridHeight / 2)
 
     this.events.once('shutdown', () => {
-      GridRendererSystem.destroySystems(this.world)
+      const rendererData = gridRenderer.getComponent(this.world, this.worldEid)
+      rendererData.graphics.destroy()
       UnitRendererSystem.destroySystems(this.world)
     })
 
