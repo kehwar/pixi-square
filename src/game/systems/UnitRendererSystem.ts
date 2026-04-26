@@ -1,74 +1,54 @@
-import type { World } from 'bitecs'
 import type { GameObjects } from 'phaser'
 import type { GameWorld } from './types'
-import { query } from 'bitecs'
+import { ComponentSystem } from './ComponentSystem'
 import { TILE_SIZE } from './GridSystem'
-import { Position } from './PositionSystem'
+import { PositionSystem } from './PositionSystem'
 
 // --- Constants ---
 
 const UNIT_SIZE = TILE_SIZE - 6
 
-// --- Component ---
+// --- Data type ---
 
 export interface UnitSpriteData {
   sprite: GameObjects.Image
 }
 
+// --- Data store ---
+
 export const UnitSprite: UnitSpriteData[] = []
 
-// --- Internal state ---
+// --- System class ---
 
-let initialized = false
-let unitEids: number[] = []
-
-// --- System functions ---
-
-export function update(world: World<GameWorld>): void {
-  if (!initialized) {
-    // Generate the shared 'unit' texture from a temporary Graphics object
+export class UnitRendererSystem extends ComponentSystem<UnitSpriteData> {
+  override install(world: GameWorld): void {
+    world.setupComponentStorage(UnitRendererSystem, UnitSprite)
     const gfx = world.scene.add.graphics()
     gfx.fillStyle(0xFFD700, 1)
     gfx.fillRect(0, 0, UNIT_SIZE, UNIT_SIZE)
     gfx.generateTexture('unit', UNIT_SIZE, UNIT_SIZE)
     gfx.destroy()
-
-    // Create one Image per unit entity
-    unitEids = Array.from(query(world, [Position]))
-    for (const eid of unitEids) {
-      const sprite = world.scene.add.image(
-        Position.pixelX[eid]!,
-        Position.pixelY[eid]!,
-        'unit',
-      )
-      UnitSprite[eid] = { sprite }
-    }
-
-    initialized = true
   }
-  else {
-    // Reposition all unit sprites to match current Position data
-    for (const eid of unitEids) {
-      UnitSprite[eid]?.sprite.setPosition(
-        Position.pixelX[eid]!,
-        Position.pixelY[eid]!,
-      )
-    }
-  }
-}
 
-export function destroySystems(_world: World<GameWorld>): void {
-  for (const eid of unitEids) {
-    UnitSprite[eid]?.sprite.destroy()
+  override create(world: GameWorld, eid: number): void {
+    const posStorage = world.getComponentStorage(PositionSystem)
+    const sprite = world.scene.add.image(
+      posStorage.pixelX[eid]!,
+      posStorage.pixelY[eid]!,
+      'unit',
+    )
+    this.setComponent(world, eid, { sprite })
   }
-  UnitSprite.length = 0
-  unitEids = []
-  initialized = false
-}
 
-// Expose for testing
-export function _reset(): void {
-  UnitSprite.length = 0
-  unitEids = []
-  initialized = false
+  override update(world: GameWorld, eid: number, _delta: number): void {
+    const posStorage = world.getComponentStorage(PositionSystem)
+    const { sprite } = this.getComponent(world, eid)
+    sprite.setPosition(posStorage.pixelX[eid]!, posStorage.pixelY[eid]!)
+  }
+
+  override destroy(world: GameWorld, eid: number): void {
+    const { sprite } = this.getComponent(world, eid)
+    sprite.destroy()
+    super.destroy(world, eid)
+  }
 }

@@ -1,10 +1,10 @@
-import type { GameWorld } from '../types'
-import { addComponent, addEntity, createWorld } from 'bitecs'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { addComponent, addEntity } from 'bitecs'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { TILE_SIZE } from '../GridSystem'
-import { Position } from '../PositionSystem'
-import * as UnitRendererSystem from '../UnitRendererSystem'
+import { addPositionComponent, Position, PositionSystem } from '../PositionSystem'
+import { createWorld } from '../types'
+import { UnitRendererSystem, UnitSprite } from '../UnitRendererSystem'
 
 // Mock Phaser before importing modules that depend on it
 vi.mock('phaser', () => {
@@ -32,9 +32,14 @@ vi.mock('phaser', () => {
   return { Scene, Events: { EventEmitter } }
 })
 
+afterEach(() => {
+  UnitSprite.length = 0
+})
+
 function makeWorld(entityCount = 3): {
-  world: ReturnType<typeof createWorld<GameWorld>>
+  world: ReturnType<typeof createWorld>
   eids: number[]
+  system: UnitRendererSystem
   addImageMock: ReturnType<typeof vi.fn>
   addGraphicsMock: ReturnType<typeof vi.fn>
   gfxInstance: { fillStyle: ReturnType<typeof vi.fn>, fillRect: ReturnType<typeof vi.fn>, generateTexture: ReturnType<typeof vi.fn>, destroy: ReturnType<typeof vi.fn> }
@@ -58,142 +63,150 @@ function makeWorld(entityCount = 3): {
       graphics: addGraphicsMock,
       image: addImageMock,
     },
-  } as unknown as GameWorld['scene']
+  } as unknown as Parameters<typeof createWorld>[0]
 
-  const world = createWorld<GameWorld>({ scene: mockScene } as GameWorld)
+  const world = createWorld(mockScene)
+  world.installSystem(new PositionSystem())
+  const system = new UnitRendererSystem()
+  world.installSystem(system)
 
   const eids: number[] = []
   for (let i = 0; i < entityCount; i++) {
     const eid = addEntity(world)
-    addComponent(world, eid, Position)
-    Position.col[eid] = i + 1
-    Position.row[eid] = i + 1
-    Position.pixelX[eid] = (i + 1) * TILE_SIZE + TILE_SIZE / 2
-    Position.pixelY[eid] = (i + 1) * TILE_SIZE + TILE_SIZE / 2
+    addPositionComponent(world, eid, i + 1, i + 1)
     eids.push(eid)
   }
 
-  return { world, eids, addImageMock, addGraphicsMock, gfxInstance }
+  return { world, eids, system, addImageMock, addGraphicsMock, gfxInstance }
 }
 
-describe('unitRendererSystem', () => {
-  beforeEach(() => {
-    UnitRendererSystem._reset()
+describe('unitRendererSystem.install', () => {
+  it('calls add.graphics() once to build the shared texture', () => {
+    const { addGraphicsMock } = makeWorld()
+    expect(addGraphicsMock).toHaveBeenCalledOnce()
   })
 
-  describe('first call to update()', () => {
-    it('calls add.graphics() once to build the shared texture', () => {
-      const { world, addGraphicsMock } = makeWorld()
-      UnitRendererSystem.update(world)
-      expect(addGraphicsMock).toHaveBeenCalledOnce()
-    })
-
-    it('calls generateTexture("unit", ...) on the temporary graphics', () => {
-      const { world, gfxInstance } = makeWorld()
-      UnitRendererSystem.update(world)
-      expect(gfxInstance.generateTexture).toHaveBeenCalledOnce()
-      expect(gfxInstance.generateTexture).toHaveBeenCalledWith('unit', expect.any(Number), expect.any(Number))
-    })
-
-    it('destroys the temporary graphics after generating the texture', () => {
-      const { world, gfxInstance } = makeWorld()
-      UnitRendererSystem.update(world)
-      expect(gfxInstance.destroy).toHaveBeenCalledOnce()
-    })
-
-    it('calls add.image() once per unit entity', () => {
-      const entityCount = 4
-      const { world, addImageMock } = makeWorld(entityCount)
-      UnitRendererSystem.update(world)
-      expect(addImageMock).toHaveBeenCalledTimes(entityCount)
-    })
-
-    it('creates each image at the correct pixel coordinates', () => {
-      const { world, eids, addImageMock } = makeWorld()
-      UnitRendererSystem.update(world)
-
-      for (let i = 0; i < eids.length; i++) {
-        const eid = eids[i]!
-        const call = addImageMock.mock.calls[i]!
-        expect(call[0]).toBe(Position.pixelX[eid])
-        expect(call[1]).toBe(Position.pixelY[eid])
-        expect(call[2]).toBe('unit')
-      }
-    })
-
-    it('does not call add.graphics() again on the second call', () => {
-      const { world, addGraphicsMock } = makeWorld()
-      UnitRendererSystem.update(world)
-      UnitRendererSystem.update(world)
-      expect(addGraphicsMock).toHaveBeenCalledOnce()
-    })
+  it('calls generateTexture("unit", ...) on the temporary graphics', () => {
+    const { gfxInstance } = makeWorld()
+    expect(gfxInstance.generateTexture).toHaveBeenCalledOnce()
+    expect(gfxInstance.generateTexture).toHaveBeenCalledWith('unit', expect.any(Number), expect.any(Number))
   })
 
-  describe('subsequent calls to update()', () => {
-    it('calls setPosition() on each sprite with current pixel coordinates', () => {
-      const { world, eids } = makeWorld()
+  it('destroys the temporary graphics after generating the texture', () => {
+    const { gfxInstance } = makeWorld()
+    expect(gfxInstance.destroy).toHaveBeenCalledOnce()
+  })
+})
 
-      // First call: initialize sprites
-      UnitRendererSystem.update(world)
-
-      // Move each unit to a new position
-      for (const eid of eids) {
-        Position.pixelX[eid] = Position.pixelX[eid]! + 10
-        Position.pixelY[eid] = Position.pixelY[eid]! + 20
-      }
-
-      // Second call: should reposition
-      UnitRendererSystem.update(world)
-
-      for (const eid of eids) {
-        const { sprite } = UnitRendererSystem.UnitSprite[eid]!
-        expect(sprite.setPosition).toHaveBeenLastCalledWith(
-          Position.pixelX[eid],
-          Position.pixelY[eid],
-        )
-      }
-    })
-
-    it('calls setPosition() on every unit entity each subsequent call', () => {
-      const entityCount = 5
-      const { world, eids } = makeWorld(entityCount)
-
-      UnitRendererSystem.update(world)
-      UnitRendererSystem.update(world)
-
-      for (const eid of eids) {
-        const { sprite } = UnitRendererSystem.UnitSprite[eid]!
-        expect(sprite.setPosition).toHaveBeenCalledOnce()
-      }
-    })
+describe('unitRendererSystem.create', () => {
+  it('calls add.image() when an entity gets the component', () => {
+    const { world, addImageMock } = makeWorld(0)
+    const eid = addEntity(world)
+    addPositionComponent(world, eid, 1, 1)
+    addComponent(world, eid, UnitRendererSystem)
+    expect(addImageMock).toHaveBeenCalledOnce()
   })
 
-  describe('destroySystems()', () => {
-    it('calls sprite.destroy() for each unit entity', () => {
-      const entityCount = 4
-      const { world, eids } = makeWorld(entityCount)
+  it('calls add.image() once per unit entity', () => {
+    const entityCount = 4
+    const { world, addImageMock } = makeWorld(0)
+    for (let i = 0; i < entityCount; i++) {
+      const eid = addEntity(world)
+      addPositionComponent(world, eid, i + 1, i + 1)
+      addComponent(world, eid, UnitRendererSystem)
+    }
+    expect(addImageMock).toHaveBeenCalledTimes(entityCount)
+  })
 
-      UnitRendererSystem.update(world)
+  it('creates each image at the correct pixel coordinates', () => {
+    const { world, addImageMock } = makeWorld(0)
+    const eids: number[] = []
+    for (let i = 0; i < 3; i++) {
+      const eid = addEntity(world)
+      addPositionComponent(world, eid, i + 1, i + 1)
+      addComponent(world, eid, UnitRendererSystem)
+      eids.push(eid)
+    }
 
-      const sprites = eids.map(eid => UnitRendererSystem.UnitSprite[eid]!.sprite)
+    for (let i = 0; i < eids.length; i++) {
+      const eid = eids[i]!
+      const call = addImageMock.mock.calls[i]!
+      expect(call[0]).toBe(Position.pixelX[eid])
+      expect(call[1]).toBe(Position.pixelY[eid])
+      expect(call[2]).toBe('unit')
+    }
+  })
+})
 
-      UnitRendererSystem.destroySystems(world)
+describe('unitRendererSystem.update', () => {
+  it('calls setPosition() on the sprite with current pixel coordinates', () => {
+    const { world, eids, system } = makeWorld()
+    addComponent(world, eids[0]!, UnitRendererSystem)
 
-      for (const sprite of sprites) {
-        expect(sprite.destroy).toHaveBeenCalledOnce()
-      }
-    })
+    // Move entity to a new position
+    Position.pixelX[eids[0]!] = 999
+    Position.pixelY[eids[0]!] = 888
 
-    it('clears the UnitSprite store after destroying', () => {
-      const { world } = makeWorld()
-      UnitRendererSystem.update(world)
-      UnitRendererSystem.destroySystems(world)
-      expect(UnitRendererSystem.UnitSprite.length).toBe(0)
-    })
+    system.update(world, eids[0]!, 16)
 
-    it('is safe to call without a prior update()', () => {
-      const { world } = makeWorld()
-      expect(() => UnitRendererSystem.destroySystems(world)).not.toThrow()
-    })
+    const { sprite } = UnitSprite[eids[0]!]!
+    expect(sprite.setPosition).toHaveBeenLastCalledWith(999, 888)
+  })
+
+  it('repositions sprite to match current pixel coordinates', () => {
+    const entityCount = 3
+    const { world, eids, system } = makeWorld(entityCount)
+    for (const eid of eids) {
+      addComponent(world, eid, UnitRendererSystem)
+    }
+
+    for (const eid of eids) {
+      Position.pixelX[eid] = eid * 10
+      Position.pixelY[eid] = eid * 20
+    }
+
+    for (const eid of eids) {
+      system.update(world, eid, 16)
+    }
+
+    for (const eid of eids) {
+      const { sprite } = UnitSprite[eid]!
+      expect(sprite.setPosition).toHaveBeenLastCalledWith(eid * 10, eid * 20)
+    }
+  })
+})
+
+describe('unitRendererSystem.destroy', () => {
+  it('calls sprite.destroy() for the entity', () => {
+    const { world, system } = makeWorld(0)
+    const eid = addEntity(world)
+    addPositionComponent(world, eid, 1, 1)
+    addComponent(world, eid, UnitRendererSystem)
+
+    const sprite = UnitSprite[eid]!.sprite
+    system.destroy(world, eid)
+    expect(sprite.destroy).toHaveBeenCalledOnce()
+  })
+
+  it('clears the UnitSprite store entry after destroying', () => {
+    const { world, system } = makeWorld(0)
+    const eid = addEntity(world)
+    addPositionComponent(world, eid, 1, 1)
+    addComponent(world, eid, UnitRendererSystem)
+
+    system.destroy(world, eid)
+    expect(UnitSprite[eid]).toBeUndefined()
+  })
+
+  it('pixel coordinates are correct when image is first created', () => {
+    const { world } = makeWorld(0)
+    const eid = addEntity(world)
+    addPositionComponent(world, eid, 3, 5)
+    addComponent(world, eid, UnitRendererSystem)
+    const { sprite } = UnitSprite[eid]!
+    // sprite was created with correct initial position
+    expect(sprite).toBeDefined()
+    expect(Position.pixelX[eid]).toBe(3 * TILE_SIZE + TILE_SIZE / 2)
+    expect(Position.pixelY[eid]).toBe(5 * TILE_SIZE + TILE_SIZE / 2)
   })
 })

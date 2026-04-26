@@ -152,6 +152,8 @@ Refactor `PositionSystem` and `MovementSystem` to extend `ComponentSystem` using
 
 ## Phase 5: Unit systems migration
 
+> ✅ Completed — `UnitRendererSystem`, `WanderingSystem`, and `UnitFactorySystem` all converted to `ComponentSystem` subclasses. `UnitRendererSystem extends ComponentSystem<UnitSpriteData>` (AoS); `install` generates the shared `'unit'` texture once; `create` adds an `Image` unconditionally; `update` repositions per-entity; `destroy` tears down the sprite and calls `super.destroy`. No `initialized` flag, no `unitEids` array, no `destroySystems` export. `WanderingSystem extends ComponentSystem<object>`; `install` registers exactly one `'movement:path-empty'` listener resolving the grid via `query(world, [GridSystem])`; `create` requests the initial path for the unit; `uninstall` removes the listener. `UnitFactorySystem extends ComponentSystem<object>`; `create` spawns all unit entities with `PositionSystem`, `MovementSystem`, `PathfindingSystem`, and `WanderingSystem`; no manual `requestPath` call. All three spec files rewritten. 96/96 tests pass; no TypeScript or lint errors.
+
 **User stories**: 20 (UnitFactorySystem, UnitRendererSystem, WanderingSystem), 22, 23, 24, 25
 
 ### What to build
@@ -164,15 +166,24 @@ Refactor the three remaining systems. `UnitRendererSystem extends ComponentSyste
 
 ### Acceptance criteria
 
-- [ ] `UnitRendererSystem.install(world)` generates the `'unit'` texture exactly once; `create(world, eid)` adds an `Image` unconditionally with no `initialized` flag; `update(world, eid, delta)` repositions the sprite from `Position` SoA arrays; `destroy(world, eid)` destroys the sprite for `eid`
-- [ ] No module-level `initialized` flag or `unitEids` array in `UnitRendererSystem`; no `destroySystems` export
-- [ ] `WanderingSystem extends ComponentSystem<object>` with no `setupComponentStorage` call; `install(world)` registers exactly one `'movement:path-empty'` listener that resolves gridData via `query(world, [GridSystem])` — no `worldEid` parameter or closure
-- [ ] `WanderingSystem.create(world, eid)` requests the initial path for `eid` (calls `requestPath` using grid, Movement, Position data)
-- [ ] `WanderingSystem.uninstall(world)` removes the `'movement:path-empty'` listener registered during `install`
-- [ ] `UnitFactorySystem extends ComponentSystem<object>`; `create(world, eid)` spawns all unit entities, attaches `PositionSystem`, `MovementSystem`, `PathfindingSystem`, and `WanderingSystem` to each; no manual `requestPath` call (delegated to `WanderingSystem.create`)
-- [ ] No module-level mutable singletons in any of the three systems
-- [ ] `UnitRendererSystem.spec.ts`, `WanderingSystem.spec.ts`, `UnitFactorySystem.spec.ts` updated to new signatures; all existing assertions pass
-- [ ] No Lint/TypeScript errors
+- [x] `UnitRendererSystem.install(world)` generates the `'unit'` texture exactly once; `create(world, eid)` adds an `Image` unconditionally with no `initialized` flag; `update(world, eid, delta)` repositions the sprite from `Position` SoA arrays; `destroy(world, eid)` destroys the sprite for `eid`
+- [x] No module-level `initialized` flag or `unitEids` array in `UnitRendererSystem`; no `destroySystems` export
+- [x] `WanderingSystem extends ComponentSystem<object>` with no `setupComponentStorage` call; `install(world)` registers exactly one `'movement:path-empty'` listener that resolves gridData via `query(world, [GridSystem])` — no `worldEid` parameter or closure
+- [x] `WanderingSystem.create(world, eid)` requests the initial path for `eid` (calls `requestPath` using grid, Movement, Position data)
+- [x] `WanderingSystem.uninstall(world)` removes the `'movement:path-empty'` listener registered during `install`
+- [x] `UnitFactorySystem extends ComponentSystem<object>`; `create(world, eid)` spawns all unit entities, attaches `PositionSystem`, `MovementSystem`, `PathfindingSystem`, and `WanderingSystem` to each; no manual `requestPath` call (delegated to `WanderingSystem.create`)
+- [x] No module-level mutable singletons in any of the three systems
+- [x] `UnitRendererSystem.spec.ts`, `WanderingSystem.spec.ts`, `UnitFactorySystem.spec.ts` updated to new signatures; all existing assertions pass
+- [x] No Lint/TypeScript errors
+
+### Notes
+
+- `WanderingSystem` stores a private `_onPathEmpty` handler reference so `uninstall` can pass the exact same function object to `world.events.off`. The `EventEmitter` mock in `WanderingSystem.spec.ts` was extended with an `off` method to support this.
+- `WanderingSystem.create` and the `'movement:path-empty'` listener both resolve the grid via `query(world, [GridSystem])` instead of capturing a `worldEid` closure — this eliminates the `worldEid` parameter from both paths.
+- `UnitFactorySystem.create` accesses grid data directly via `Grid[eid]!` (where `eid` is the grid/world entity that received the UnitFactorySystem component). No `query` call needed in the factory.
+- `UnitRendererSystem` keeps the module-level `UnitSprite: UnitSpriteData[]` array as the registered AoS storage (consistent with the Grid and GridRendererStore pattern). Tests clear it in `afterEach` via `UnitSprite.length = 0`.
+- `UnitFactorySystem.spec.ts` now queries `[PositionSystem, MovementSystem]` (class tokens) instead of the old `[Position, Movement]` (SoA objects), fixing the 2 deferred failures from Phase 4. A new assertion confirms all units have `WanderingSystem` attached.
+- The `'movement:path-empty'` listener mock in `WanderingSystem.spec.ts` is simpler now: `install` is the only place it registers. `create` is tested separately. `uninstall` test verifies the listener is removed by emitting after uninstall and confirming `requestPath` is not called.
 
 ---
 
