@@ -1,9 +1,9 @@
-import type { GameWorld } from '../types'
+import type { GameWorld, GameWorldContext } from '../types'
 import { addEntity, createWorld } from 'bitecs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as GridSystem from '../GridSystem'
-import * as PathfindingSystem from '../PathfindingSystem'
 import { addMovementComponent } from '../MovementSystem'
+import * as PathfindingSystem from '../PathfindingSystem'
 import { addPositionComponent } from '../PositionSystem'
 import { create } from '../WanderingSystem'
 
@@ -45,9 +45,14 @@ function makeWorldWithGrid(): {
   events: ReturnType<typeof makeMockEvents>
 } {
   const events = makeMockEvents()
-  const world = createWorld<GameWorld>({
-    scene: {} as GameWorld['scene'],
-    events: events as unknown as GameWorld['events'],
+  const world = createWorld<GameWorldContext>({
+    scene: {} as GameWorldContext['scene'],
+    events: events as unknown as GameWorldContext['events'],
+    components: new Map(),
+    observers: [],
+    systems: [],
+    installSystem: () => {},
+    setupComponentData: () => {},
   })
   const worldEid = addEntity(world)
   GridSystem.create(world, worldEid)

@@ -28,7 +28,7 @@ export function update(world: World<GameWorld>): void {
   if (!initialized) {
     // Generate the shared 'unit' texture from a temporary Graphics object
     const gfx = world.scene.add.graphics()
-    gfx.fillStyle(0xffd700, 1)
+    gfx.fillStyle(0xFFD700, 1)
     gfx.fillRect(0, 0, UNIT_SIZE, UNIT_SIZE)
     gfx.generateTexture('unit', UNIT_SIZE, UNIT_SIZE)
     gfx.destroy()

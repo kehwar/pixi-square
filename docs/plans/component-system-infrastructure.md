@@ -18,6 +18,8 @@
 
 ## Phase 1: Foundation
 
+> ✅ Completed — `ComponentSystem<TData>` abstract class and `createWorld(scene)` factory introduced in `src/game/systems/ComponentSystem.ts` and `src/game/systems/types.ts`. All lifecycle hooks default to no-ops. `installSystem` wires `observe`/`onAdd` and calls `system.install`. `setupComponentData` + `static getComponent` provide typed per-entity data access. 11 new tests; 77/77 suite green; no lint or TypeScript errors. No existing files modified.
+
 **User stories**: 1, 2, 3, 4, 5, 6, 7, 8
 
 ### What to build
@@ -26,14 +28,22 @@ Introduce the `ComponentSystem<TData>` abstract base class and the `createWorld(
 
 ### Acceptance criteria
 
-- [ ] `ComponentSystem<TData>` abstract class exists with no-op defaults for all hooks: `install`, `uninstall`, `create`, `update`, `sleep`, `wake`, `pause`, `resume`, `destroy`
-- [ ] `static getComponent(world, eid): TData` returns the typed per-entity data object without a manual cast at the call site
-- [ ] `createWorld(scene)` returns a `GameWorld` with `scene`, `events`, `components`, `observers`, `systems`, `installSystem`, `setupComponentData` all initialised
-- [ ] `world.installSystem(system)` pushes to `world.systems`, stores the unsubscribe in `world.observers`, and calls `system.install(world)` once
-- [ ] Attaching a component via `addComponent(world, eid, SystemClass)` automatically fires `system.create(world, eid)` for that system
-- [ ] `world.setupComponentData(SystemClass, data)` stores `data` in `world.components` keyed by the constructor
-- [ ] Tests assert: `world.systems` contains the system after install; `install` is called exactly once; `create` fires automatically on `addComponent`; `getComponent` returns the correct typed object; `uninstall` is called on teardown; `world.observers` is drained after teardown
-- [ ] No Lint/TypeScript errors
+- [x] `ComponentSystem<TData>` abstract class exists with no-op defaults for all hooks: `install`, `uninstall`, `create`, `update`, `sleep`, `wake`, `pause`, `resume`, `destroy`
+- [x] `static getComponent(world, eid): TData` returns the typed per-entity data object without a manual cast at the call site
+- [x] `createWorld(scene)` returns a `GameWorld` with `scene`, `events`, `components`, `observers`, `systems`, `installSystem`, `setupComponentData` all initialised
+- [x] `world.installSystem(system)` pushes to `world.systems`, stores the unsubscribe in `world.observers`, and calls `system.install(world)` once
+- [x] Attaching a component via `addComponent(world, eid, SystemClass)` automatically fires `system.create(world, eid)` for that system
+- [x] `world.setupComponentData(SystemClass, data)` stores `data` in `world.components` keyed by the constructor
+- [x] Tests assert: `world.systems` contains the system after install; `install` is called exactly once; `create` fires automatically on `addComponent`; `getComponent` returns the correct typed object; `uninstall` is called on teardown; `world.observers` is drained after teardown
+- [x] No Lint/TypeScript errors
+
+### Notes
+
+- `GameWorld` is now defined as `World<GameWorldContext>` (a bitECS world augmented with our context). The old `GameWorld` interface became `GameWorldContext`; the exported `GameWorld` type alias is backward-compatible with all existing `World<GameWorld>` usages.
+- `ComponentSystem<TData>` uses `protected declare _type: TData` as a phantom property to make the type parameter reachable by the linter without introducing any runtime field.
+- `static getComponent` uses a typed `this: ComponentSystemClass<T>` parameter so TypeScript infers `T` from the calling subclass — no cast needed at call sites.
+- `createWorld` imports `Events` from Phaser; tests that import it as a value must mock `phaser` via `vi.mock`.
+- Container registered via `setupComponentData` is typed `T[]` (sparse array indexed by entity ID); `getComponent` returns `container[eid]`.
 
 ---
 

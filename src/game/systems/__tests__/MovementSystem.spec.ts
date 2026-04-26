@@ -1,9 +1,9 @@
-import type { GameWorld } from '../types'
+import type { GameWorld, GameWorldContext } from '../types'
 import { addEntity, createWorld } from 'bitecs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { TILE_SIZE } from '../GridSystem'
 import { addMovementComponent, Movement, update } from '../MovementSystem'
 import { addPositionComponent, Position } from '../PositionSystem'
-import { TILE_SIZE } from '../GridSystem'
 
 // --- Helpers ---
 
@@ -34,9 +34,14 @@ function makeWorld(): {
   events: MockEvents
 } {
   const events = makeMockEvents()
-  const world = createWorld<GameWorld>({
-    scene: {} as GameWorld['scene'],
-    events: events as unknown as GameWorld['events'],
+  const world = createWorld<GameWorldContext>({
+    scene: {} as GameWorldContext['scene'],
+    events: events as unknown as GameWorldContext['events'],
+    components: new Map(),
+    observers: [],
+    systems: [],
+    installSystem: () => {},
+    setupComponentData: () => {},
   })
   const eid = addEntity(world)
   addPositionComponent(world, eid, 5, 5)

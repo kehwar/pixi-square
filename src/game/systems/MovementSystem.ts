@@ -1,6 +1,6 @@
 import type { World } from 'bitecs'
-import type { GameWorld } from './types'
 import type { TileCoord } from './GridSystem'
+import type { GameWorld } from './types'
 import { addComponent, query } from 'bitecs'
 import { TILE_SIZE } from './GridSystem'
 import { Position } from './PositionSystem'

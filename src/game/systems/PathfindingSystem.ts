@@ -1,6 +1,6 @@
 import type { World } from 'bitecs'
-import type { GameWorld } from './types'
 import type { TileCoord } from './GridSystem'
+import type { GameWorld } from './types'
 import { addComponent, query } from 'bitecs'
 import { Grid, isPassable } from './GridSystem'
 import { Movement } from './MovementSystem'

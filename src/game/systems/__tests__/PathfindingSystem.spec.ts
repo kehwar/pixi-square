@@ -1,10 +1,10 @@
 import type { GameWorld } from '../types'
 import { addComponent, addEntity, createWorld } from 'bitecs'
 import { describe, expect, it } from 'vitest'
-import { _findPath, requestPath } from '../PathfindingSystem'
 import * as GridSystem from '../GridSystem'
-import { addPositionComponent } from '../PositionSystem'
 import { addMovementComponent, Movement } from '../MovementSystem'
+import { _findPath, requestPath } from '../PathfindingSystem'
+import { addPositionComponent } from '../PositionSystem'
 
 // --- Helpers ---
 
@@ -148,8 +148,7 @@ describe('pathfindingSystem.requestPath', () => {
     const wId = addEntity(w)
     // Build an all-passable grid so paths are always found
     const tiles: GridSystem.Tile[][] = Array.from({ length: GridSystem.ROWS }, () =>
-      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })),
-    )
+      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })))
     GridSystem.Grid[wId] = { tiles }
     addComponent(w, wId, GridSystem.Grid)
     return { world: w, worldEid: wId }
@@ -174,8 +173,7 @@ describe('pathfindingSystem.requestPath', () => {
     const w2 = createWorld<GameWorld>({} as GameWorld)
     const wId2 = addEntity(w2)
     const tiles: GridSystem.Tile[][] = Array.from({ length: GridSystem.ROWS }, () =>
-      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })),
-    )
+      Array.from({ length: GridSystem.COLS }, () => ({ type: 'passable' as GridSystem.TileType })))
     tiles[3]![3] = { type: 'obstacle' }
     GridSystem.Grid[wId2] = { tiles }
     addComponent(w2, wId2, GridSystem.Grid)

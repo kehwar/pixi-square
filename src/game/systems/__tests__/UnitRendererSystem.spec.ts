@@ -2,8 +2,8 @@ import type { GameWorld } from '../types'
 import { addComponent, addEntity, createWorld } from 'bitecs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Position } from '../PositionSystem'
 import { TILE_SIZE } from '../GridSystem'
+import { Position } from '../PositionSystem'
 import * as UnitRendererSystem from '../UnitRendererSystem'
 
 // Mock Phaser before importing modules that depend on it
