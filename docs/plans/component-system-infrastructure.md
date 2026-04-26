@@ -4,7 +4,7 @@
 
 ## Architectural decisions
 
-- **`ComponentSystem<TData>` token model**: the class constructor is both the bitECS component token (`addComponent`, `query`, `observe`) and the `world.components` Map key. No constructor parameters, no instance data property.
+- **`ComponentSystem<TComponent, TStorage>` token model**: the class constructor is both the bitECS component token (`addComponent`, `query`, `observe`) and the `world.components` Map key. No constructor parameters, no instance data property. `TComponent` is the per-entity value returned by `getComponent`; `TStorage` is the raw container stored in `world.components` (defaults to `TComponent[]` for AoS). SoA subclasses declare an explicit `TStorage` shape and override `getComponent` to pluck fields manually.
 - **`GameWorld` interface**: `scene`, `events`, `components`, `observers`, `systems`, `installSystem`, `setupComponentData`. The complete contract — no fields are added outside `createWorld`.
 - **`world.events`**: a dedicated `Phaser.Events.EventEmitter` owned by the world. Cross-system game events (e.g. `'movement:path-empty'`) go here, never on Phaser's internal scene bus.
 - **Per-entity hook signatures**: all hooks receive `(world: GameWorld, eid: number)` — no `worldEid` parameter. Per-system hooks receive `(world: GameWorld)` only.
@@ -18,7 +18,7 @@
 
 ## Phase 1: Foundation
 
-> ✅ Completed — `ComponentSystem<TData>` abstract class and `createWorld(scene)` factory introduced in `src/game/systems/ComponentSystem.ts` and `src/game/systems/types.ts`. All lifecycle hooks default to no-ops. `installSystem` wires `observe`/`onAdd` and calls `system.install`. `setupComponentData` + `static getComponent` provide typed per-entity data access. 11 new tests; 77/77 suite green; no lint or TypeScript errors. No existing files modified.
+> ✅ Completed — `ComponentSystem<TComponent, TStorage>` abstract class and `createWorld(scene)` factory introduced in `src/game/systems/ComponentSystem.ts` and `src/game/systems/types.ts`. All lifecycle hooks default to no-ops. `installSystem` wires `observe`/`onAdd` and calls `system.install`. `setupComponentData` + `static getComponentStorage` + `static getComponent` provide typed per-entity data access for both AoS and SoA patterns. 11 new tests; 77/77 suite green; no lint or TypeScript errors. No existing files modified.
 
 **User stories**: 1, 2, 3, 4, 5, 6, 7, 8
 
@@ -28,8 +28,9 @@ Introduce the `ComponentSystem<TData>` abstract base class and the `createWorld(
 
 ### Acceptance criteria
 
-- [x] `ComponentSystem<TData>` abstract class exists with no-op defaults for all hooks: `install`, `uninstall`, `create`, `update`, `sleep`, `wake`, `pause`, `resume`, `destroy`
-- [x] `static getComponent(world, eid): TData` returns the typed per-entity data object without a manual cast at the call site
+- [x] `ComponentSystem<TComponent, TStorage>` abstract class exists with no-op defaults for all hooks: `install`, `uninstall`, `create`, `update`, `sleep`, `wake`, `pause`, `resume`, `destroy`
+- [x] `static getComponentStorage(world): TStorage` returns the raw container registered for this system
+- [x] `static getComponent(world, eid): TComponent` returns the typed per-entity data object without a manual cast at the call site; defaults to AoS (`storage[eid]`); overridable for SoA
 - [x] `createWorld(scene)` returns a `GameWorld` with `scene`, `events`, `components`, `observers`, `systems`, `installSystem`, `setupComponentData` all initialised
 - [x] `world.installSystem(system)` pushes to `world.systems`, stores the unsubscribe in `world.observers`, and calls `system.install(world)` once
 - [x] Attaching a component via `addComponent(world, eid, SystemClass)` automatically fires `system.create(world, eid)` for that system
@@ -40,10 +41,11 @@ Introduce the `ComponentSystem<TData>` abstract base class and the `createWorld(
 ### Notes
 
 - `GameWorld` is now defined as `World<GameWorldContext>` (a bitECS world augmented with our context). The old `GameWorld` interface became `GameWorldContext`; the exported `GameWorld` type alias is backward-compatible with all existing `World<GameWorld>` usages.
-- `ComponentSystem<TData>` uses `protected declare _type: TData` as a phantom property to make the type parameter reachable by the linter without introducing any runtime field.
-- `static getComponent` uses a typed `this: ComponentSystemClass<T>` parameter so TypeScript infers `T` from the calling subclass — no cast needed at call sites.
+- `ComponentSystem<TComponent, TStorage>` uses phantom `protected declare` properties (`_component`, `_storage`) to anchor both type params for the linter without introducing runtime fields. `TStorage` defaults to `TComponent[]` so AoS subclasses only need one type arg.
+- `static getComponentStorage` returns `TStorage` raw. `static getComponent` defaults to AoS (`(storage as TComponent[])[eid]`). SoA subclasses override `getComponent` to pluck fields from their storage object.
+- `world.components` is typed `Map<ComponentSystemClass<any, any>, unknown>` so both AoS and SoA keys are accepted without a `TStorage extends any[]` constraint.
 - `createWorld` imports `Events` from Phaser; tests that import it as a value must mock `phaser` via `vi.mock`.
-- Container registered via `setupComponentData` is typed `T[]` (sparse array indexed by entity ID); `getComponent` returns `container[eid]`.
+- Container registered via `setupComponentData` accepts `TStorage` directly — callers pass `T[]` for AoS or a SoA struct for SoA.
 
 ---
 

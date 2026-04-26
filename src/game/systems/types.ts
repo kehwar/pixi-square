@@ -7,18 +7,18 @@ import { Events as PhaserEvents } from 'phaser'
 export interface GameWorldContext {
   scene: Scene
   events: Events.EventEmitter
-  components: Map<ComponentSystemClass, unknown>
+  components: Map<ComponentSystemClass<any, any>, unknown>
   observers: (() => void)[]
   systems: ComponentSystem[]
   installSystem: (system: ComponentSystem) => void
-  setupComponentData: <T>(SystemClass: ComponentSystemClass<T>, data: T[]) => void
+  setupComponentData: <TComponent, TStorage>(SystemClass: ComponentSystemClass<TComponent, TStorage>, data: TStorage) => void
 }
 
 export type GameWorld = World<GameWorldContext>
 
 export function createWorld(scene: Scene): GameWorld {
   const events = new PhaserEvents.EventEmitter()
-  const components: Map<ComponentSystemClass, unknown> = new Map()
+  const components: Map<ComponentSystemClass<any, any>, unknown> = new Map()
   const observers: (() => void)[] = []
   const systems: ComponentSystem[] = []
 
@@ -29,7 +29,7 @@ export function createWorld(scene: Scene): GameWorld {
     observers,
     systems,
     installSystem: (_system: ComponentSystem) => {},
-    setupComponentData: <T>(_SystemClass: ComponentSystemClass<T>, _data: T[]) => {},
+    setupComponentData: <TComponent, TStorage>(_SystemClass: ComponentSystemClass<TComponent, TStorage>, _data: TStorage) => {},
   })
 
   world.installSystem = (system: ComponentSystem) => {
@@ -40,7 +40,7 @@ export function createWorld(scene: Scene): GameWorld {
     system.install(world)
   }
 
-  world.setupComponentData = <T>(SystemClass: ComponentSystemClass<T>, data: T[]) => {
+  world.setupComponentData = <TComponent, TStorage>(SystemClass: ComponentSystemClass<TComponent, TStorage>, data: TStorage) => {
     world.components.set(SystemClass, data)
   }
 

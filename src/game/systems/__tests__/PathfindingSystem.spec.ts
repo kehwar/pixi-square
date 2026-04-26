@@ -43,7 +43,7 @@ const grid5x5 = makeGrid([
   [T, T, T, T, T],
 ])
 
-const gridData5x5 = makeGridData([
+const _gridData5x5 = makeGridData([
   [T, T, T, T, T],
   [T, F, T, T, T],
   [T, T, T, T, T],
