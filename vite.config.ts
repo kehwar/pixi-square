@@ -5,8 +5,7 @@ import { defineConfig } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/pixi-square/' : '/',
+export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
@@ -16,4 +15,4 @@ export default defineConfig(({ command }) => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-}))
+})
