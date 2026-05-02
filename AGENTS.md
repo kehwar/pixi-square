@@ -25,3 +25,17 @@ npm run lint         # ESLint auto-fix
 ## Archived Docs
 
 `docs/development-log/` contains dev log entries for completed phases. `docs/prd/` and `docs/plans/` hold active or future work. Treat completed log entries as historical records only — do not treat their contents as pending work or current guidance.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical label strings (no overrides). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
