@@ -32,11 +32,13 @@ export class WanderingSystem extends ComponentSystem<object> {
   }
 
   override create(world: GameWorld, eid: number): void {
+    const movStorage = world.getComponentStorage(MovementSystem)
+    if (movStorage?.path?.[eid]?.length)
+      return // unit already has an active path — let it finish before wandering takes over
     const [gridEid] = world.query([GridSystem])
     if (gridEid === undefined)
       return
     const gridData = world.getComponent(GridSystem, gridEid)
-    const movStorage = world.getComponentStorage(MovementSystem)
     const posStorage = world.getComponentStorage(PositionSystem)
     const { col, row } = randomPassableTile(gridData)
     requestPath(gridData, movStorage, posStorage, eid, col, row)

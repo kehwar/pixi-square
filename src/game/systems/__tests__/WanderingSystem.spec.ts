@@ -152,6 +152,22 @@ describe('wanderingSystem.create', () => {
     const [, , , , destCol, destRow] = vi.mocked(pathfinding.requestPath).mock.calls[0]!
     expect(isPassable(world.getComponent(GridSystem, worldEid), destCol!, destRow!)).toBe(true)
   })
+
+  it('skips the initial path request when the unit already has an active path', () => {
+    const { world } = makeWorldWithGrid()
+
+    const eid = world.addEntity()
+    world.addComponent(PositionSystem, eid, (w, sys, e) => sys.setPosition(w, e, 0, 0))
+    world.addComponent(MovementSystem, eid)
+
+    // Seed an active path before attaching WanderingSystem (simulates a released Player Unit)
+    const ms = world.getComponentStorage(MovementSystem)
+    ms.path[eid] = [{ col: 3, row: 3 }]
+
+    world.addComponent(WanderingSystem, eid)
+
+    expect(pathfinding.requestPath).not.toHaveBeenCalled()
+  })
 })
 
 describe('wanderingSystem.uninstall', () => {
