@@ -37,6 +37,12 @@
       "sourceType": "github",
       "computedHash": "5fde78ae7047c19893e9b3d0e80be46ee11296fbe3a0086e25e9ef8f33c6532d"
     },
+    "dev-log": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-log/SKILL.md",
+      "computedHash": "56d64e6b4c303297b85096bf42e3fc4f196a5b13209910602b32fc86105236ae"
+    },
     "diagnose": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -74,16 +80,16 @@
       "computedHash": "3ebe08ee9696547649afdf574b290ffd1d676128c722b8e14dea41e883c44520"
     },
     "grill-me": {
-      "source": "mattpocock/skills",
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/productivity/grill-me/SKILL.md",
-      "computedHash": "784f0dbb7403b0f00324bce9a112f715342777a0daee7bbb7385f9c6f0a170ea"
+      "skillPath": "skills/grill-me/SKILL.md",
+      "computedHash": "d57cb4fc43bf6b6c1e0e100407dcf502b29697b823f37ec14c37b5aa0bed870e"
     },
     "grill-with-docs": {
-      "source": "mattpocock/skills",
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
-      "computedHash": "31a5b1ae116558bf7d3f633f442835f54bd7645923d4f45c7823e52a97317666"
+      "skillPath": "skills/grill-with-docs/SKILL.md",
+      "computedHash": "82af343d3bae512c0d5c254d0dd9b1d6a04773aa4cc91e5d3032e141b863c024"
     },
     "groups-and-containers": {
       "source": "phaserjs/phaser",
@@ -91,10 +97,10 @@
       "computedHash": "f8eb3b2e665b8e9fd438b0f8f634b56f5b8421e732ea1be19ce99d554e3ed55b"
     },
     "improve-codebase-architecture": {
-      "source": "mattpocock/skills",
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "computedHash": "c77b86b4332919499608f9af1880074e1fec65a59b95c70c27a9f39cd137865e"
+      "skillPath": "skills/improve-codebase-architecture/SKILL.md",
+      "computedHash": "c3110ff641edc0bee37782f82f2bd6d368cf86287d77a7fc42a531374d9d665c"
     },
     "input-keyboard-mouse-touch": {
       "source": "phaserjs/phaser",
@@ -142,16 +148,28 @@
       "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
       "computedHash": "3a32f8f1ed8160c9d286a2aabe88ee9b884c6f3f88a7a6c47b7d5d552c959587"
     },
+    "setup-workflow-skills": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/setup-workflow-skills/SKILL.md",
+      "computedHash": "2a145c6825c5bc77f5e7c4eb27ba6897b84a9b5f2cc06535952a051831b5bc29"
+    },
+    "shadcn-vue": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn-vue/SKILL.md",
+      "computedHash": "5cda1065647684be0688f200a95aa27d26153f5a62c47da1b2e6c1ad9bbd048a"
+    },
     "sprites-and-images": {
       "source": "phaserjs/phaser",
       "sourceType": "github",
       "computedHash": "dfa048c9121566261eae554b4c4b20854991c59736df199809966b4ddcc743e0"
     },
     "tdd": {
-      "source": "mattpocock/skills",
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/engineering/tdd/SKILL.md",
-      "computedHash": "15a7b5e36383ebadb2dec5e586679e55e9663d292da418926b8da6fc0ef27d84"
+      "skillPath": "skills/tdd/SKILL.md",
+      "computedHash": "5ea762e14d76b8e8b85b96f8aa2cd684e33fe4f08c93ae239bd63e418612fd0f"
     },
     "text-and-bitmaptext": {
       "source": "phaserjs/phaser",
@@ -175,10 +193,16 @@
       "computedHash": "73a91f30784523aa59ec9b02769576ebfc738e2cd5ad8f6441076031f0a5d5ac"
     },
     "to-prd": {
-      "source": "mattpocock/skills",
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/engineering/to-prd/SKILL.md",
-      "computedHash": "fd8c259f9c44eff08e29a1a2fc71a806a3568d279a55387a361f78620b10f2aa"
+      "skillPath": "skills/to-prd/SKILL.md",
+      "computedHash": "9128a959d66772ac02c25a3af5159011a17e83bcc61f66e96eb4de7659749990"
+    },
+    "to-tasks": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/to-tasks/SKILL.md",
+      "computedHash": "5314a032bb945603a14484a2f2e37cc35ad38df4fa35b7afa3032b3c027a1bf5"
     },
     "triage": {
       "source": "mattpocock/skills",
@@ -201,11 +225,47 @@
       "sourceType": "github",
       "computedHash": "2194dda519e5c1a8f71150967f8c7aa2d242b7d82036ace52e9574765217e9f3"
     },
-    "write-a-skill": {
-      "source": "mattpocock/skills",
+    "vite": {
+      "source": "kehwar/skills",
       "sourceType": "github",
-      "skillPath": "skills/productivity/write-a-skill/SKILL.md",
-      "computedHash": "b44d8aab2ead83c716e01af4c9a24ccc4575ce70ad58ec4f1749fb88c9cc82ba"
+      "skillPath": "skills/vite/SKILL.md",
+      "computedHash": "3fbd09174f3c1c7fea7db0db0ddffe84d4c2c81f2d01915fc6080902bcd5148f"
+    },
+    "vitest": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "c6d776b574e937c7bdc84f4468934a4a9d6921a6b958534db0cd4838f225d23f"
+    },
+    "vue": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vue/SKILL.md",
+      "computedHash": "d4ae88ef573ff8c0a874eab2bea912cff9e82eb33a4c15b0ea8fda2ccdd8fcdc"
+    },
+    "vue-best-practices": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vue-best-practices/SKILL.md",
+      "computedHash": "8cc31ee1f740d5e967fc15a60a3de69db48da3f88aff34916bb22c5ec0bfec5e"
+    },
+    "vue-testing-best-practices": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vue-testing-best-practices/SKILL.md",
+      "computedHash": "4698a60c6cc1632343fabb24d0ce11fc5aa5a8877f994fbaaabf1da2b4e0a5c0"
+    },
+    "vueuse-functions": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vueuse-functions/SKILL.md",
+      "computedHash": "41aca00a21aa043ccdfafe3d1e9ed4281518ca43a0a01fa4430a1286b61c0eda"
+    },
+    "write-a-skill": {
+      "source": "kehwar/skills",
+      "sourceType": "github",
+      "skillPath": "skills/write-a-skill/SKILL.md",
+      "computedHash": "b8f1502fb38dfe85b74a027c778b2cea2948f83de1649a6cc2c43e06890caaee"
     },
     "zoom-out": {
       "source": "mattpocock/skills",

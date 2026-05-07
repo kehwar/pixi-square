@@ -1,0 +1,9 @@
+{
+  "type": "synced",
+  "upstream": "mattpocock",
+  "sourceUrl": "https://github.com/mattpocock/skills",
+  "skillPath": "skills/productivity/write-a-skill",
+  "gitSha": "70141119e9fe47430b62b93bcf166a73e6580048",
+  "contentHash": "b44d8aab2ead",
+  "syncedAt": "2026-05-04"
+}

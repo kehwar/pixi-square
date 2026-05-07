@@ -1,0 +1,9 @@
+{
+  "type": "synced",
+  "upstream": "mattpocock",
+  "sourceUrl": "https://github.com/mattpocock/skills",
+  "skillPath": "skills/engineering/improve-codebase-architecture",
+  "gitSha": "70141119e9fe47430b62b93bcf166a73e6580048",
+  "contentHash": "c77b86b43329",
+  "syncedAt": "2026-05-04"
+}

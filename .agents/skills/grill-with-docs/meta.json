@@ -1,0 +1,9 @@
+{
+  "type": "synced",
+  "upstream": "mattpocock",
+  "sourceUrl": "https://github.com/mattpocock/skills",
+  "skillPath": "skills/engineering/grill-with-docs",
+  "gitSha": "70141119e9fe47430b62b93bcf166a73e6580048",
+  "contentHash": "31a5b1ae1165",
+  "syncedAt": "2026-05-04"
+}
