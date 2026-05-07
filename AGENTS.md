@@ -37,13 +37,19 @@ If your output contradicts an existing ADR, surface it explicitly rather than si
 
 ## Architecture
 
-**Boundary rule** — `src/game/` is a Vue-free zone. Files inside it must have zero imports from `vue`, `vue-router`, or `pinia`. Vue components and Pinia stores must have zero direct imports of Phaser objects; they interact with the game exclusively through `EventBus` and the `StartGame` factory.
+> **Migration in progress**: The project is migrating from a single-game monolith to a **multi-game collection framework**. See the epic `pixi-square-ejb` for full details. During transition, both old and new patterns may coexist.
 
-**Canvas model** — The Phaser `Game` instance is created by `PhaserGame.vue` on mount and destroyed on unmount. It must never be stored inside `ref()`, `reactive()`, or any other Vue reactive container.
+### Multi-Game Model (Target Architecture)
 
-**Layer model** — `AppLayout.vue` renders a persistent full-viewport Phaser canvas (`PhaserGame.vue`) and a `position: fixed; z-index: 10` UI overlay (`<RouterView>`) on top. The canvas stays alive for the entire session; only the overlay content changes on navigation.
+**Boundary rule** — `src/shared/` and `src/games/{gameId}/` are Vue-free zones (except `components/` and `views/` subdirs). Files inside `systems/`, `utils/`, and `scenes/` must have zero imports from `vue`, `vue-router`, or `pinia`. Vue components and Pinia stores must have zero direct imports of Phaser objects; they interact exclusively through game-scoped `EventBus` and the `StartGame` factory.
 
-**Router** — Hash mode (`createWebHashHistory`). Routes: `#/` → `MainMenuView`, `#/game` → `GameView`, `#/settings` → `SettingsView`.
+**Canvas model** — Each game gets its own Phaser `Game` instance, created by `{Game}GameView.vue` on mount and destroyed on unmount. It must never be stored inside `ref()`, `reactive()`, or any other Vue reactive container.
+
+**Layer model** — `AppLayout.vue` renders a dynamic overlay (`<RouterView>`) on top of the currently-active game canvas. Routes determine which game (and canvas) is active. Only the overlay content and active game change on navigation.
+
+**Router** — Hash mode (`createWebHashHistory`). Static routes: `#/` → `MenuView`, `#/settings` → `SettingsView`. Dynamic routes registered at startup: `#/{gameId}` → `{Game}GameView` (e.g., `#/grid-world` → `GridWorldGameView`).
+
+**Game Registry** — Loaded once at app startup. Each game exports a manifest (`{ id, title, thumbnail, sceneNames, startScene }`). Router dynamically registers routes based on available manifests.
 
 ## Build and Test
 

@@ -1,6 +1,8 @@
 # pixi-square
 
-A colony management game built with [Phaser 4](https://phaser.io/) and [Vue 3](https://vuejs.org/). Phaser drives all rendering, cameras, and input; Vue handles the UI overlay and application shell.
+A collection of games built with [Phaser 4](https://phaser.io/) and [Vue 3](https://vuejs.org/). The framework provides isolated game instances, dynamic routing, and a shared infrastructure for multi-game development.
+
+> **Status**: Currently migrating from single-game (Grid World) to multi-game collection. See `docs/adr/` and epic `pixi-square-ejb` for architecture details.
 
 ## Tech stack
 
@@ -12,37 +14,43 @@ A colony management game built with [Phaser 4](https://phaser.io/) and [Vue 3](h
 | Tests | Vitest + `@vue/test-utils` + happy-dom |
 | Lint | ESLint via `@antfu/eslint-config` |
 
-## Project structure
+## Project structure (Multi-Game Model)
 
 ```
 src/
-  main.ts           ← Vue entry point
-  App.vue           ← mounts <RouterView>
-  game/             ← Phaser code — no Vue/Pinia/Router imports allowed here
-    main.ts         ← StartGame factory (creates Phaser.Game instance)
-    EventBus.ts     ← Phaser EventEmitter singleton bridging game ↔ Vue
-    scenes/         ← Phaser scene chain
-      Boot.ts       ← immediately starts Preloader
-      Preloader.ts  ← asset loading; starts MainMenu
-      MainMenu.ts   ← waits for start-game EventBus event
-      Game.ts       ← grid + unit rendering, simulation tick
-      GameOver.ts
-    simulation/     ← pure TypeScript game logic (no Phaser)
-      grid.ts       ← 200×200 tile grid + passability
-      unit.ts       ← Unit type (controller, idleMs)
-      world.ts      ← World + WorldFactory, tick loop, wandering
-      pathfinder.ts ← A* 8-directional pathfinder
-  components/
-    PhaserGame.vue  ← mounts/destroys Phaser canvas on mount/unmount
-  views/
-    AppLayout.vue   ← root layout: persistent canvas + UI overlay
-    MainMenuView.vue
-    GameView.vue
-    SettingsView.vue
-  router/           ← hash-mode router (#/, #/game, #/settings)
-  stores/           ← Pinia stores
-  assets/           ← CSS and static assets
+  main.ts                    ← Vue entry point
+  App.vue                    ← mounts <RouterView>
+
+  shared/                    ← Shared infrastructure (Vue-free in systems/ + utils/)
+    systems/                 ← Reusable ECS systems
+    utils/                   ← EventBus factory, StartGame factory, utilities
+    components/              ← Reusable Vue components (GameTile, etc.)
+    views/                   ← Reusable Vue views (AppLayout, MenuView, etc.)
+
+  games/                     ← Game collection (each game is isolated)
+    grid-world/              ← Example: Grid-world game
+      index.ts               ← Exports manifest + factory
+      manifest.ts            ← { id, title, thumbnail, sceneNames, startScene }
+      scenes/                ← Game-specific Phaser scenes (Boot, MainMenu, GameScene, etc.)
+      systems/               ← Game-specific ECS systems
+      utils/                 ← Game-specific utilities
+      components/            ← Game-specific Vue components
+      views/
+        GameView.vue         ← Entry point: creates Phaser instance
+
+    puzzle-game/             ← Future game (follows same pattern)
+      (same structure as grid-world/)
+
+    games-registry.ts        ← Loader: collects all game manifests
+
+  router/                    ← Vue Router configuration
+  stores/                    ← Pinia stores (registry, per-game state)
+  assets/                    ← CSS and static assets
 ```
+
+### Legacy Structure (During Migration)
+
+Temporarily, `src/game/` may still contain shared logic and the original grid-world scenes until full migration is complete. See [AGENTS.md](AGENTS.md) for boundary details.
 
 ## Dev commands
 
@@ -53,6 +61,16 @@ npm run build        # type-check + production build → dist/
 npm run test:unit    # Vitest unit tests
 npm run lint         # ESLint (auto-fix)
 ```
+
+## Next Steps
+
+1. **Implement game registry loader** — `src/games/games-registry.ts` and discovery mechanism
+2. **Refactor router** — Dynamic route registration based on loaded manifests
+3. **Migrate grid-world** — Move current game to `src/games/grid-world/`
+4. **Create game-scoped stores** — Per-game `currentScene` and `EventBus`
+5. **Add more games** — Extend the collection with new game folders
+
+See epic `pixi-square-ejb` for detailed tasks and dependencies.
 
 ## IDE setup
 
